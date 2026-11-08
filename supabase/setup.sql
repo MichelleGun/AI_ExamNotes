@@ -48,6 +48,8 @@ begin
   return new;
 end; $$;
 
+revoke execute on function public.handle_new_user() from public, anon, authenticated;
+
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
@@ -74,6 +76,7 @@ begin
   return new_total;
 end; $$;
 
+revoke execute on function public.add_points(int, int, int, int) from public, anon;
 grant execute on function public.add_points(int, int, int, int) to authenticated;
 
 -- 5. Check if a username is free (used on the sign up form)

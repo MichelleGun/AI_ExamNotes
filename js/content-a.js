@@ -41,6 +41,7 @@ window.TOPICS.push({
 <tr><td><b>GBFS</b> Greedy best-first</td><td>Lowest <b>f(n) = h(n)</b></td><td><b>Priority queue</b></td></tr>
 <tr><td><b>A*</b></td><td>Lowest <b>f(n) = g(n) + h(n)</b></td><td><b>Priority queue</b></td></tr>
 </table>
+<div class="svgwrap">${SVG.frontier}<p class="figcap">How each algorithm stores the frontier. The data structure decides which node is expanded next.</p></div>
 <div class="formula">g(n) = path cost from start to n (known, real)<br>h(n) = estimated cost from n to the goal (heuristic, e.g. straight-line distance h<sub>SLD</sub>)<br>f(n) = evaluation function. Best-first search always expands the frontier node with the <b>minimum f(n)</b>.</div>
 <div class="analogy"><b>Analogies</b><br>
 <b>BFS</b> = ripples in a pond: explore level by level.<br>
@@ -76,6 +77,7 @@ window.TOPICS.push({
 <div class="formula">h(n) ≤ c(n, a, n') + h(n')</div>
 <p>(Like the triangle inequality. Consistency is <b>stronger / stricter</b> than admissibility.)</p>
 </div>
+<div class="svgwrap">${SVG.heuristic}<p class="figcap">Left: what g, h and f measure. Right: the consistency triangle inequality.</p></div>
 <ul class="big">
 <li><b>Tree-search A*</b> is optimal if h is <b>admissible</b>.</li>
 <li><b>Graph-search A*</b> is optimal if h is <b>consistent</b>.</li>
@@ -125,6 +127,7 @@ window.TOPICS.push({
 <li>92 goal states (12 fundamental). e.g. cost(2,4,7,4,8,5,5,2) = 4, cost(2,4,6,8,3,1,7,5) = 0.</li>
 </ul></div>
 <div class="box"><b>4-queen problem</b>: same idea on 4 × 4. Successors: 4 × 3 = <b>12</b>. Only <b>2</b> solutions: (2,4,1,3) and (3,1,4,2).</div>
+<div class="svgwrap">${SVG.queens}<p class="figcap">A 4-queens goal state vs a state with one attacking pair (red line).</p></div>
 <div class="box"><b>Four-city TSP</b> (Travelling Salesman): visit each city once, return to start, minimise total distance.
 <ul><li>State = a route (tour order), e.g. A-B-C-D-A.</li><li>Neighbour = <b>swap two cities</b>.</li><li>Objective = minimise distance. Constraint = visit each city exactly once.</li><li>Distinct tours for n cities = (n-1)!/2, so 4 cities = 3 tours.</li></ul></div>
 <div class="widget" data-widget="queens"></div>
@@ -149,6 +152,7 @@ window.TOPICS.push({
 If ΔE &lt; 0 (better): <b>always accept</b>.<br>
 If ΔE ≥ 0 (worse): accept with probability <b>p = e<sup>-ΔE / T</sup></b>.<br>
 In practice: draw random r in [0, 1). Accept if r &lt; p.</div>
+<div class="svgwrap">${SVG.saProb}<p class="figcap">Acceptance probability for a worse move. Higher T or smaller ΔE means more likely to accept.</p></div>
 <p>High T → p close to 1 → explores widely. Low T → p close to 0 → acts like hill climbing. Bigger ΔE (much worse) → smaller p.</p>
 <p class="warn"><b>Tuning:</b> cooling <b>too fast</b> = behaves like HC, gets trapped. Cooling <b>too slow</b> = many iterations. Results are random, different runs can differ. SA can escape local optima but does not guarantee the best answer in one run.</p>
 <div class="widget" data-widget="sa"></div>
@@ -167,6 +171,7 @@ In practice: draw random r in [0, 1). Accept if r &lt; p.</div>
 <li><b class="kw">Mutation</b>: randomly change a small part (e.g. flip one bit) to keep <b>diversity</b>.</li>
 </ol>
 Optional: <b class="kw">Elitism</b> = copy the best few straight into the next generation.</div>
+<div class="svgwrap">${SVG.ga}<p class="figcap">The three GA operations on the lecture example.</p></div>
 <div class="example"><b>Roulette example</b>: fitness 24, 23, 20, 11. Total 78. P = 24/78 = 0.31, 23/78 = 0.29, 20/78 = 0.26, 11/78 = 0.14. Cumulative (sorted small to big): 0.14, 0.40, 0.69, 1.0. A random number falls in one slice, that individual is selected.</div>
 <div class="example"><b>Crossover example</b>: parents 11010|110 and 00111|001, cut after 5 → children 11010<b>001</b> and 00111<b>110</b>.</div>
 <p><b>Factors affecting GA:</b> population size, representation, mixing number, selection process, recombination (crossover) procedure, mutation rate, makeup of next generation.</p>
@@ -194,10 +199,12 @@ window.TOPICS.push({
 <li><b class="kw">Ockham's razor</b>: choose the <b>simplest</b> hypothesis consistent with the data.</li>
 <li><b class="kw">Generalisation</b>: works on new unseen data. <b class="kw">Overfitting</b>: fits training data (and noise) too well, bad on test data.</li>
 </ul>
+<div class="svgwrap">${SVG.overfit}<p class="figcap">Same data, three models. Aim for the middle.</p></div>
 <div class="box"><b>Classifier metrics</b> (confusion matrix TP, TN, FP, FN)<br>
 Accuracy = (TP + TN) / All &nbsp; | &nbsp; Precision = TP / (TP + FP) &nbsp; | &nbsp; Recall = TP / (TP + FN)<br>
 F1 = 2 × P × R / (P + R) &nbsp; | &nbsp; Specificity = TN / (TN + FP)<br>
 <b>Regression metrics</b>: MAE, RMSE, R².</div>
+<div class="svgwrap">${SVG.confusion}<p class="figcap">Confusion matrix. Precision reads down the predicted + column, recall reads across the actual + row.</p></div>
 `},
     { h: "2. Decision tree learning", html: `
 <p>A tree of <b>if/then</b> tests. <b>Root node</b> → <b>internal nodes</b> (attribute tests) → <b>leaf nodes</b> (class or value). A decision path goes root to leaf.</p>
@@ -211,6 +218,7 @@ Two classes: B(q) = -[q log<sub>2</sub> q + (1-q) log<sub>2</sub>(1-q)], with B(
 Weighted child Gini = Σ (|subset<sub>k</sub>| / |parent|) × Gini(subset<sub>k</sub>)<br>
 <b>Gini reduction</b> = Gini(parent) - weighted child Gini &nbsp; → choose <b>lowest weighted Gini / largest reduction</b>
 </div>
+<div class="svgwrap">${SVG.impurity}<p class="figcap">Both impurity measures peak at 50/50 and are 0 for a pure node.</p></div>
 <p>Pure node (all one class): entropy 0, Gini 0. 50/50 node: entropy 1 bit, Gini 0.5.</p>
 <div class="example"><b>Restaurant (WillWait), 12 examples, 6+ / 6-</b><br>
 H(parent) = 1, Gini(parent) = 0.5<br>
@@ -220,6 +228,7 @@ H(None) = 0, H(Some) = 0, H(Full) = -(1/3)log<sub>2</sub>(1/3) - (2/3)log<sub>2<
 Remainder = 2/12·0 + 4/12·0 + 6/12·0.9183 = 0.4591 → <b>IG = 0.5409 bits</b><br>
 Gini(Full) = 1 - (1/3)² - (2/3)² = 0.4444 → weighted = 6/12 × 0.4444 = 0.2222 → reduction <b>0.2778</b><br>
 <b>Choose Patrons</b> (by both IG and Gini).</div>
+<div class="svgwrap">${SVG.dtree}<p class="figcap">Splitting the restaurant data on Patrons.</p></div>
 <div class="widget" data-widget="dtree"></div>
 <p><b>Algorithms:</b> <b>ID3</b> = information gain. <b>C4.5</b> = gain ratio + pruning. <b>CART</b> = Gini (classification) or MSE (regression), binary splits.</p>
 <p class="warn">Deep trees <b>overfit</b>. Control with <b>pruning</b>, max_depth, min_samples_leaf.</p>
@@ -230,10 +239,12 @@ Gini(Full) = 1 - (1/3)² - (2/3)² = 0.4444 → weighted = 6/12 × 0.4444 = 0.22
 <b class="kw">Squared error loss</b> (L2): Loss = Σ<sub>j</sub> (y<sub>j</sub> - h<sub>w</sub>(x<sub>j</sub>))² &nbsp; (sometimes averaged = MSE)<br>
 Training = an optimisation problem with decision variables (w<sub>0</sub>, w<sub>1</sub>). Loss is convex, so use <b>gradient descent</b>:<br>
 <div class="formula">w<sub>i</sub> ← w<sub>i</sub> - α · ∂Loss/∂w<sub>i</sub> &nbsp;&nbsp; (α = <b>learning rate</b> / step size)</div></div>
+<div class="svgwrap">${SVG.linreg}<p class="figcap">Left: the line and its errors (squared and summed = loss). Right: gradient descent steps down the loss bowl.</p></div>
 <div class="example">Data (1, 3), (2, 5), model h = 1 + 1.5x. Predictions 2.5 and 4. Errors 0.5 and 1. Squared error = 0.25 + 1 = <b>1.25</b> (MSE = 0.625).</div>
 <div class="box"><b class="kw">Logistic regression</b> (classification): pass the linear output through a <b>sigmoid (logistic)</b> function:<br>
 <div class="formula">h<sub>w</sub>(x) = 1 / (1 + e<sup>-w·x</sup>) → probability between 0 and 1. Threshold (usually 0.5) gives the class.</div>
 Loss = <b>binary cross-entropy</b>: -[y log ŷ + (1 - y) log(1 - ŷ)].</div>
+<div class="svgwrap">${SVG.logistic}<p class="figcap">Logistic regression: the sigmoid turns w·x into a probability, then threshold at 0.5.</p></div>
 <p>Linear: target continuous, evaluate MAE/RMSE/R². Logistic: target categorical, evaluate accuracy/precision/recall/F1.</p>
 `},
     { h: "4. K-Nearest Neighbours (KNN)", html: `
@@ -241,6 +252,7 @@ Loss = <b>binary cross-entropy</b>: -[y log ŷ + (1 - y) log(1 - ŷ)].</div>
 <ol><li>Measure distance from x<sub>q</sub> to every example.</li><li>Keep the <b>k closest</b>.</li><li><b>Classification</b>: <b>majority vote</b> of their labels. <b>Regression</b>: <b>average</b> (or distance-weighted average) of their values.</li></ol>
 <div class="formula">Euclidean: √Σ(x<sub>i</sub> - y<sub>i</sub>)² &nbsp; | &nbsp; Manhattan: Σ|x<sub>i</sub> - y<sub>i</sub>| &nbsp; | &nbsp; Minkowski: (Σ|x<sub>i</sub> - y<sub>i</sub>|<sup>p</sup>)<sup>1/p</sup></div>
 <p>Key choices: <b>k</b> (usually given), <b>distance metric</b>, weights. <b>Scale features</b> first (distance based). Slow on big data, sensitive to irrelevant features.</p>
+<div class="svgwrap">${SVG.knn}<p class="figcap">The query takes the majority label of its k = 3 nearest points.</p></div>
 <div class="example">k = 3, nearest neighbours have labels A, B, A → predict <b>A</b>. For regression with values 10, 12, 14 → predict <b>12</b>.</div>
 <div class="analogy"><b>Analogy:</b> "Tell me who your neighbours are and I will tell you who you are." You guess a new house price from the 3 most similar houses nearby.</div>
 `},
@@ -254,6 +266,7 @@ Loss = <b>binary cross-entropy</b>: -[y log ŷ + (1 - y) log(1 - ŷ)].</div>
 <li>Solve to get w*, b*. Classify: <b>f(x) = sign(w*·x + b*)</b>.</li>
 <li><b>Soft margin</b>: allows some errors. <b>C</b> = penalty: large C punishes errors more.</li>
 </ul>
+<div class="svgwrap">${SVG.svm}<p class="figcap">The widest street between the classes. Only the support vectors decide where it goes.</p></div>
 <div class="analogy"><b>Analogy:</b> building the <b>widest road</b> between two villages. The houses touching the road edges are the support vectors.</div>
 `},
     { h: "6. Ensembles: Random forest and gradient boosting", html: `
@@ -271,6 +284,7 @@ Loss = <b>binary cross-entropy</b>: -[y log ŷ + (1 - y) log(1 - ŷ)].</div>
 • Final output = <b>sum</b> of all tree contributions, scaled by <b>learning rate</b>.<br>
 • Strong on tabular data, but too many trees can overfit.</div>
 </div>
+<div class="svgwrap">${SVG.ensemble}<p class="figcap">Bagging builds trees in parallel and votes. Boosting builds trees one after another, each fixing the last.</p></div>
 <div class="analogy"><b>Analogy:</b> Random forest = asking 100 independent friends and taking a vote. Boosting = a student who fixes the mistakes from the last test each time.</div>
 `}
   ]
@@ -303,6 +317,7 @@ window.TOPICS.push({
 <tr><td>ReLU</td><td>max(0, z)</td><td>[0, ∞), fast, common in hidden layers</td></tr>
 <tr><td>Softplus</td><td>ln(1 + e<sup>z</sup>)</td><td>smooth version of ReLU</td></tr>
 </table>
+<div class="svgwrap">${SVG.activations}<p class="figcap">Shapes of the common activation functions (x axis = z).</p></div>
 <div class="analogy"><b>Analogy:</b> a neuron is a voter. Each input is an opinion, the weight is how much the voter trusts that friend, the bias is the voter's own mood, and the activation decides "speak up or stay quiet".</div>
 `},
     { h: "3. Perceptron", html: `
@@ -310,6 +325,7 @@ window.TOPICS.push({
 <ol><li>Multiply each input by its weight.</li><li>Add them (+ bias) = weighted sum.</li><li>Apply activation (hard threshold) → 0 or 1.</li></ol>
 <div class="formula"><b>Perceptron learning rule</b> (hard threshold): w<sub>i</sub> ← w<sub>i</sub> + α (y - h<sub>w</sub>(x)) x<sub>i</sub><br>
 <b>Sigmoid unit, gradient descent</b> with Loss = (y - h)²: w<sub>i</sub> ← w<sub>i</sub> + α · 2(y - h) · h(1 - h) · x<sub>i</sub></div>
+<div class="svgwrap">${SVG.perceptron}<p class="figcap">A perceptron draws one straight line. It can do AND but not XOR.</p></div>
 <div class="example">x = (1, 2), w = (0.5, -0.25), b = 0.1. Sum = 0.5 - 0.5 + 0.1 = 0.1 ≥ 0 → output <b>1</b>. If target y = 0, α = 0.1: w<sub>1</sub> = 0.5 + 0.1(0 - 1)(1) = 0.4, w<sub>2</sub> = -0.25 + 0.1(-1)(2) = -0.45.</div>
 `},
     { h: "4. Feedforward NN (MLP), forward propagation", html: `
@@ -326,6 +342,7 @@ Vector form: h<sub>w</sub>(x) = g<sup>(2)</sup>(W<sup>(2)</sup> g<sup>(1)</sup>(
     { h: "5. Backpropagation and gradient descent", html: `
 <p><b>Training</b> = two phases repeated:</p>
 <ol><li><b>Forward</b>: pass inputs layer by layer to get output ŷ.</li><li><b>Backward</b>: compute the loss, send the <b>error backwards</b> from output to input, update weights.</li></ol>
+<div class="svgwrap">${SVG.backprop}<p class="figcap">Forward pass makes ŷ. Backward pass sends Δ from the loss to every weight.</p></div>
 <div class="formula">
 Loss = (y - ŷ)² &nbsp; (squared error)<br>
 Output node error: Δ<sub>out</sub> = -2(y - ŷ) · g'(in<sub>out</sub>) &nbsp; (sigmoid: g' = ŷ(1 - ŷ))<br>
@@ -355,6 +372,7 @@ Gradient for weight from i to j: ∂Loss/∂w<sub>i,j</sub> = a<sub>i</sub> Δ<s
 <li><b>Output gate</b> o: what part of memory goes to the short-term state z<sub>t</sub>.</li>
 <li>Gates use sigmoid and <b>elementwise multiplication</b> ⊙.</li>
 </ul></div>
+<div class="svgwrap">${SVG.lstm}<p class="figcap">LSTM cell: gates (σ) decide what to forget, write and read from the cell state.</p></div>
 <div class="analogy"><b>Analogy:</b> a simple RNN is someone retelling a story by whispering (Chinese whispers): early details fade. An LSTM keeps a notebook: it can write (input gate), erase (forget gate) and read (output gate).</div>
 <p>See <a href="#/topic/l8">Lecture 8</a> for the simple RNN hidden-state calculation used in the exam.</p>
 `}
@@ -378,6 +396,7 @@ window.TOPICS.push({
 <div class="formula">Discounted return: G = r<sub>1</sub> + γ r<sub>2</sub> + γ² r<sub>3</sub> + ...</div>
 <div class="example">Rewards -0.04, -0.04, +1 with γ = 0.9: G = -0.04 + 0.9(-0.04) + 0.81(1) = -0.04 - 0.036 + 0.81 = <b>0.734</b>.</div>
 <div class="box"><b>4 × 3 grid world</b>: move in intended direction with prob <b>0.8</b>, slip to each side (perpendicular) with <b>0.1</b>. Hitting a wall = stay. Living reward -0.04. Terminals (4,3) = +1, (4,2) = -1. Wall at (2,2).</div>
+<div class="svgwrap">${SVG.grid}<p class="figcap">4 × 3 grid world: optimal utilities and policy arrows (R = -0.04, γ = 1), plus the 0.8 / 0.1 / 0.1 transition model.</p></div>
 <p><b class="kw">MEU</b> (maximum expected utility): choose the action with highest Σ P(outcome) × U(outcome). Route A: 0.8(10) + 0.2(-10) = 6. Route B: 7. Choose B.</p>
 `},
     { h: "2. U value vs Q value (Bellman equations)", html: `
@@ -394,6 +413,7 @@ U(s) = max<sub>a</sub> Q(s, a) = max<sub>a</sub> Σ<sub>s'</sub> P(s' | s, a) [ 
 <tr><td>Meaning</td><td>Expected utility of being in <b>state s</b> and acting optimally after</td><td>Expected utility of taking <b>action a in state s</b>, then acting optimally</td></tr>
 <tr><td>Link</td><td colspan="2">U(s) = max<sub>a</sub> Q(s, a)</td></tr>
 </table>
+<div class="svgwrap">${SVG.qbackup}<p class="figcap">Bellman backup: average over outcomes to get Q, then max over actions to get U.</p></div>
 <div class="example"><b>Q example</b> (γ = 1, R = -0.04): at state s, action Up: 0.8 to A (U = 0.9), 0.1 to B (U = 0.6), 0.1 stays in s (U = 0.5).<br>
 Q = 0.8(-0.04 + 0.9) + 0.1(-0.04 + 0.6) + 0.1(-0.04 + 0.5) = 0.688 + 0.056 + 0.046 = <b>0.79</b></div>
 <div class="analogy"><b>Analogy:</b> U(s) = "how good is this restaurant location for me?" Q(s, a) = "how good is it if I order <i>this dish</i> here?" The best dish decides how good the place is.</div>
@@ -415,6 +435,7 @@ Q = 0.8(-0.04 + 0.9) + 0.1(-0.04 + 0.6) + 0.1(-0.04 + 0.5) = 0.688 + 0.056 + 0.0
 `},
     { h: "5. Reinforcement learning overview", html: `
 <p>Agent interacts with an environment, takes actions, gets <b>rewards</b>, learns a policy to maximise cumulative reward. Used when P (transition model) or the policy is <b>unknown</b>. MDP = describes the task. RL = learns how to act in it.</p>
+<div class="svgwrap">${SVG.rlLoop}<p class="figcap">The RL loop. The agent learns only from what comes back.</p></div>
 <ul>
 <li><b class="kw">Exploration</b>: try new actions. <b class="kw">Exploitation</b>: use known good actions. Must balance.</li>
 <li><b class="kw">Passive RL</b>: policy is <b>fixed</b>, learn the utilities U<sup>π</sup>(s). Methods: <b>Direct utility estimation, ADP, TD</b>.</li>

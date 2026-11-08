@@ -43,6 +43,7 @@ Go to My notes + PDF, click Export PDF, tick what to include, then choose "Save 
 ## Files
 
 - `index.html` page shell
+- `js/svg.js`, `js/svg2.js` diagrams (about 50, drawn in code so they follow light/dark mode)
 - `css/style.css` light and dark theme, phone layout, print styles
 - `js/content-a.js`, `js/content-b.js` lecture notes
 - `js/cards.js` flashcards, `js/questions.js` quiz bank

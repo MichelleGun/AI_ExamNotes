@@ -13,6 +13,7 @@ window.TOPICS.push({
 </ul>
 <p>An image is a <b>tensor</b> of numbers. Colour image = 3 channels (R, G, B). Shape in PyTorch: <b>[batch, channels, height, width]</b>.</p>
 <p><b>Why not a fully connected network?</b> Flattening <b>loses spatial structure</b> (neighbours) and needs <b>too many weights</b> (224 × 224 × 3 = 150,528 inputs × 1,000 units = 150,528,000 weights). Convolution fixes both: <b>local connections + shared weights</b>.</p>
+<div class="svgwrap">${SVG.cnnPipe}<p class="figcap">A typical CNN for image classification.</p></div>
 `},
     { h: "2. Convolution operation", html: `
 <p>A <b class="kw">filter (kernel)</b> is a small grid of learned weights. <b>Slide</b> it over the input; at each position <b>multiply element-wise and sum</b> (+ bias). The result is one value in the <b>feature map</b>.</p>
@@ -21,6 +22,7 @@ window.TOPICS.push({
 <li><b class="kw">Stride</b> S: how many pixels the filter moves each step. Bigger stride → smaller output.</li>
 <li><b class="kw">Padding</b> P: add a border of zeros so the filter fits at the edges. "Same" padding keeps size.</li>
 </ul>
+<div class="svgwrap">${SVG.convCalc}<p class="figcap">One convolution step: multiply the highlighted 3 × 3 patch by the kernel and sum.</p></div>
 <div class="formula"><b>Output size</b> = floor( (N + 2P - K) / S ) + 1<br>N = input size, K = kernel size, P = padding, S = stride</div>
 <div class="example">5 × 5 input, 3 × 3 kernel, S = 1, P = 0: (5 - 3)/1 + 1 = <b>3 × 3</b>.<br>
 32 × 32, K = 5, P = 2, S = 1: (32 + 4 - 5)/1 + 1 = <b>32</b>.<br>
@@ -46,6 +48,7 @@ Same without bias: 200 × 16 = 3,200.</div>
 <ul><li><b class="kw">Max pooling</b>: take the <b>largest</b> value in each window.</li><li><b class="kw">Average pooling</b>: take the <b>mean</b> of each window.</li></ul>
 <div class="formula">Output size = floor( (N - F) / S ) + 1 &nbsp; (F = pool size). 2 × 2, stride 2 halves the size.</div>
 <div class="example">Window [1 3; 2 8] → max = <b>8</b>, average = (1+3+2+8)/4 = <b>3.5</b>.<br>512 × 512 with 2 × 2 max pool stride 2 → 256 × 256.</div>
+<div class="svgwrap">${SVG.pool}<p class="figcap">Each coloured 2 × 2 window becomes one output value.</p></div>
 <p>Typical block: <b>Conv → ReLU → Pool</b>. ReLU keeps positive evidence (sets negatives to 0).</p>
 `},
     { h: "5. Receptive field", html: `
@@ -54,6 +57,7 @@ Same without bias: 200 × 16 = 3,200.</div>
 <div class="formula">Layer by layer: r<sub>new</sub> = r<sub>old</sub> + (K - 1) × j<sub>old</sub>, &nbsp; j<sub>new</sub> = j<sub>old</sub> × S &nbsp; (start r = 1, j = 1; j = "jump", product of earlier strides)<br>
 Stacked stride-1 K × K convs: r = 1 + L(K - 1). Two 3 × 3 → <b>5 × 5</b>, three 3 × 3 → <b>7 × 7</b>.</div>
 <div class="example">3 × 3 conv (s1) → r = 3, j = 1. 2 × 2 pool (s2) → r = 3 + 1×1 = 4, j = 2. 3 × 3 conv (s1) → r = 4 + 2×2 = <b>8</b>.</div>
+<div class="svgwrap">${SVG.rf}<p class="figcap">1D view of two stacked 3 × 3 convolutions. The top unit depends on 5 input pixels.</p></div>
 <div class="widget" data-widget="rf"></div>
 <div class="analogy"><b>Analogy:</b> a company. A worker sees only their desk (small receptive field). A manager sees reports from many workers (bigger area). The CEO sees the whole company.</div>
 `},
@@ -65,6 +69,7 @@ Stacked stride-1 K × K convs: r = 1 + L(K - 1). Two 3 × 3 → <b>5 × 5</b>, t
 <tr><td><b>VGGNet</b></td><td><b>Repeat small 3 × 3 filters</b>, very uniform, deeper (11 to 19 layers). Two 3 × 3 = receptive field of one 5 × 5 with fewer parameters.</td></tr>
 <tr><td><b>ResNet</b></td><td><b>Identity shortcuts (skip connections)</b>. Block learns a correction F(x) and outputs <b>F(x) + x</b>. If F(x) = 0 it keeps x. Gives gradients a direct path, so very deep networks train (fights vanishing gradient).</td></tr>
 </table>
+<div class="svgwrap">${SVG.resblock}<p class="figcap">ResNet block: output = F(x) + x.</p></div>
 <p><b>Fine-tuning / transfer learning</b>: reuse a pretrained backbone (e.g. ResNet) for a new task.</p>
 `},
     { h: "7. Object detection: IoU and Non-max suppression", html: `
@@ -75,9 +80,11 @@ Intersection area = width × height<br>
 Union = area A + area B - intersection<br>
 <b>IoU = intersection / union</b> (0 = no overlap, 1 = identical)</div>
 <div class="example">A: (0,0) to (6,4), B: (2,0) to (8,4). Areas 24 and 24. Overlap 4 × 4 = 16. Union 24 + 24 - 16 = 32. <b>IoU = 0.50</b>.</div>
+<div class="svgwrap">${SVG.iou}<p class="figcap">The IoU worked example drawn to scale.</p></div>
 <div class="box"><b class="kw">Non-max suppression (NMS)</b> removes duplicate boxes:
 <ol><li>Sort boxes by <b>confidence</b>. Keep the highest one.</li><li>Remove (suppress) other boxes of the <b>same class</b> whose IoU with it is above the threshold.</li><li>Repeat with the next highest remaining box.</li></ol>
 Read the threshold rule carefully: if it says IoU <b>strictly greater</b> than 0.5, then IoU = 0.5 is <b>not</b> suppressed. Boxes of a different class are not suppressed.</div>
+<div class="svgwrap">${SVG.nms}<p class="figcap">NMS with threshold 0.5. Only same-class boxes that overlap the kept box are removed.</p></div>
 <div class="widget" data-widget="iou"></div>
 <div class="analogy"><b>Analogy:</b> NMS is like several friends taking photos of the same person. Keep the sharpest photo, delete the near-duplicates, but keep photos of other people.</div>
 `}
@@ -93,6 +100,7 @@ window.TOPICS.push({
 <p>A feedforward network has no state. An RNN has a <b class="kw">hidden state</b> h<sub>t</sub> = memory of earlier inputs.</p>
 <div class="formula">h<sub>t</sub> = tanh( W<sub>hh</sub> h<sub>t-1</sub> + W<sub>xh</sub> x<sub>t</sub> + b ) &nbsp;&nbsp; ŷ<sub>t</sub> = W<sub>hy</sub> h<sub>t</sub><br>h<sub>0</sub> = zeros (or learned)</div>
 <ul><li>The <b>same cell and same weights</b> are reused at every step. Unrolling copies the computation, not the parameters.</li></ul>
+<div class="svgwrap">${SVG.seqTypes}<p class="figcap">Orange = inputs, purple = outputs, boxes = the same RNN cell at each time step.</p></div>
 <table class="tbl">
 <tr><th>Type</th><th>Example</th></tr>
 <tr><td>One-to-many</td><td>Image captioning (one image → words), music from a seed</td></tr>
@@ -108,6 +116,7 @@ window.TOPICS.push({
 <li>Apply the activation (e.g. tanh) using the <b>supplied lookup value</b>. The sum before tanh is NOT the final answer.</li>
 <li>Round as asked.</li></ol></div>
 <div class="example">x = 2, w<sub>x</sub> = 0.5, h<sub>prev</sub> = 0.4, w<sub>h</sub> = 0.25, no bias.<br>Sum = 0.5 × 2 + 0.25 × 0.4 = 1.0 + 0.1 = 1.1. Given tanh(1.1) = 0.800 → <b>h<sub>t</sub> = 0.800</b>.</div>
+<div class="svgwrap">${SVG.rnnCell}<p class="figcap">The worked example as a picture. Note tanh is applied after the sum.</p></div>
 <p class="warn">Do not swap x and h<sub>prev</sub>. Keep each with its own weight.</p>
 <div class="widget" data-widget="rnn"></div>
 `},
@@ -128,6 +137,8 @@ window.TOPICS.push({
 <div class="formula">P(w | history) = count(history, w) / count(history)<br>Bigram uses last 1 word, <b>trigram uses last 2 words</b>.</div>
 <div class="example">Corpus has "Mando protects" 5 times, followed by "Grogu" 3 times. P(Grogu | Mando protects) = <b>3/5</b>.</div>
 <p>N-grams memorise local patterns, but do not learn meaning and fail on unseen word combinations.</p>
+<div class="svgwrap">${SVG.embed}<p class="figcap">Embeddings place similar words close, and relations become directions.</p></div>
+<div class="svgwrap">${SVG.w2v}<p class="figcap">Word2Vec training tasks with a window of 2.</p></div>
 `},
     { h: "6. Naive Bayes text classifier", html: `
 <div class="formula">P(c | text) ∝ P(c) × Π<sub>i</sub> P(x<sub>i</sub> | c) &nbsp; ("naive" = words independent given the class)<br>
@@ -152,6 +163,7 @@ S<sub>+</sub> = 0.000328, S<sub>-</sub> = 0.000640 → P(+|text) = 0.000328 / 0.
 <li>Add corresponding components. The output has the <b>same length as each value vector</b>.</li>
 <li>Use all weights. Do NOT just pick the biggest-weight vector, and do NOT add unweighted vectors.</li></ol></div>
 <div class="example">Weights 0.3 and 0.7, values [2, 0] and [0, 2].<br>Output = [0.3×2 + 0.7×0, 0.3×0 + 0.7×2] = <b>[0.6, 1.4]</b>.</div>
+<div class="svgwrap">${SVG.attention}<p class="figcap">The worked example: weights 0.3 and 0.7 blend the two value vectors.</p></div>
 <div class="widget" data-widget="attn"></div>
 <div class="analogy"><b>Analogy:</b> a library search. Your question is the query, book titles are keys, book contents are values. You read a bit of every book, more from the books whose titles match best, and blend what you read.</div>
 `},
@@ -201,6 +213,7 @@ window.TOPICS.push({
 <li><b>Generate</b>: sample z from N(0, I), decode → a new sample.</li>
 <li>β-VAE (β &gt; 1): stronger KL → <b>disentangled</b> latent factors.</li>
 </ul>
+<div class="svgwrap">${SVG.vae}<p class="figcap">VAE: the encoder outputs a distribution, z is sampled with the reparameterisation trick.</p></div>
 <div class="analogy"><b>Analogy:</b> an AE stores each photo at an exact pin on a map. A VAE stores each photo as a fuzzy cloud, and the clouds overlap and fill the map, so any random spot gives a sensible picture.</div>
 `},
     { h: "4. Generative Adversarial Network (GAN)", html: `
@@ -278,10 +291,12 @@ window.TOPICS.push({
 `},
     { h: "4. Inference problem KB ⊨ γ", html: `
 <p><b class="kw">Entailment</b> α ⊨ β: in <b>every model where α is true, β is also true</b>. M(α) ⊆ M(β).</p>
+<div class="svgwrap">${SVG.entail}<p class="figcap">Entailment: the KB's models sit inside the query's models.</p></div>
 <p><b>KB ⊨ γ</b>: the knowledge base entails the query γ. Build the KB from the problem: only the sentences <b>relevant</b> to the query.</p>
 <div class="box"><b>Wumpus world</b> (4 × 4 cave, pits cause <b>breeze</b> in adjacent rooms, Wumpus causes <b>stench</b>). Symbols: P<sub>x,y</sub> = pit in [x,y], B<sub>x,y</sub> = breeze in [x,y].<br>
 R1: ¬P<sub>1,1</sub><br>R2: B<sub>1,1</sub> ⇔ (P<sub>1,2</sub> ∨ P<sub>2,1</sub>)<br>R3: B<sub>2,1</sub> ⇔ (P<sub>1,1</sub> ∨ P<sub>2,2</sub> ∨ P<sub>3,1</sub>)<br>R4: ¬B<sub>1,1</sub> (no breeze felt in [1,1])<br>R5: B<sub>2,1</sub><br>
 Query: <b>KB ⊨ ¬P<sub>1,2</sub></b>? (Is [1,2] pit-free?)</div>
+<div class="svgwrap">${SVG.wumpus}<p class="figcap">The Wumpus world facts used in every proof below.</p></div>
 <p><b>Deductive</b> reasoning: general rule → certain conclusion. <b>Inductive</b>: patterns → probable conclusion.</p>
 `},
     { h: "5. Method 1: Model checking", html: `
@@ -309,6 +324,7 @@ R2 in CNF: (¬B<sub>1,1</sub> ∨ P<sub>1,2</sub> ∨ P<sub>2,1</sub>) ∧ (¬P<
 Resolve P<sub>1,2</sub> with (¬P<sub>1,2</sub> ∨ B<sub>1,1</sub>) → <b>B<sub>1,1</sub></b><br>
 Resolve B<sub>1,1</sub> with R4 ¬B<sub>1,1</sub> → <b>□ (empty clause)</b><br>
 Contradiction, so KB ⊨ ¬P<sub>1,2</sub>.</div>
+<div class="svgwrap">${SVG.resolution}<p class="figcap">Resolution tree for KB ⊨ ¬P₁,₂. Reaching □ proves it.</p></div>
 <div class="example">Simple: KB = P, P ⇒ Q. Query Q. Clauses: P, ¬P ∨ Q, ¬Q. Resolve ¬P ∨ Q with ¬Q → ¬P. Resolve with P → □.</div>
 <div class="analogy"><b>Analogy:</b> a detective says "suppose the butler is innocent", then shows this leads to an impossible situation. So the butler must be guilty.</div>
 `},
@@ -340,6 +356,7 @@ Multiplication (AND, independent): P(A ∧ B) = P(A) × P(B)<br>
 <b>Marginalisation</b>: P(X) = Σ<sub>y</sub> P(X, y)<br>
 <b>Conditional independence</b>: P(X, Y | Z) = P(X | Z) P(Y | Z)
 </div>
+<div class="svgwrap">${SVG.condVenn}<p class="figcap">Conditional probability: B becomes the whole world.</p></div>
 <div class="example"><b>Bayes</b>: disease rate 1%, test detects 90% of sick (P(+|D) = 0.9), false positive 5% (P(+|¬D) = 0.05).<br>
 P(+) = 0.9 × 0.01 + 0.05 × 0.99 = 0.009 + 0.0495 = 0.0585.<br>
 P(D | +) = 0.009 / 0.0585 = <b>0.154</b>. (Only 15%, because the disease is rare!)</div>
@@ -372,6 +389,7 @@ s<sub>B</sub> = P(b) Σ<sub>e</sub> P(e) Σ<sub>a</sub> P(a|b,e) P(j|a) P(m|a)<b
 = 0.001 × {0.002 [0.95·0.90·0.70 + 0.05·0.05·0.01] + 0.998 [0.94·0.90·0.70 + 0.06·0.05·0.01]} ≈ 0.000592<br>
 s<sub>¬B</sub> = 0.999 × {0.002 [0.29·0.90·0.70 + 0.71·0.05·0.01] + 0.998 [0.001·0.90·0.70 + 0.999·0.05·0.01]} ≈ 0.001492<br>
 P(B | j, m) = 0.000592 / (0.000592 + 0.001492) ≈ <b>0.284</b></div>
+<div class="svgwrap">${SVG.enumTree}<p class="figcap">Enumeration tree for P(b, j, m): sum over hidden E and A.</p></div>
 <table class="tbl"><tr><th>CPT</th><th>Values</th></tr>
 <tr><td>P(B)</td><td>0.001</td></tr><tr><td>P(E)</td><td>0.002</td></tr>
 <tr><td>P(A | B, E)</td><td>t,t: 0.95 &nbsp; t,f: 0.94 &nbsp; f,t: 0.29 &nbsp; f,f: 0.001</td></tr>
@@ -424,6 +442,7 @@ window.TOPICS.push({
 <tr><td>Individuals</td><td>Alice instanceOf Student</td></tr>
 <tr><td>Axioms</td><td>Every Student is a Person. enrolsIn(x, y) requires Student(x) and Course(y) (<b>domain</b> and <b>range</b>)</td></tr>
 </table>
+<div class="svgwrap">${SVG.ontology}<p class="figcap">Classes (top), individuals (green), properties (arrows) and an inferred fact.</p></div>
 <div class="box"><b>Reasoning with an ontology</b> (a reasoner applies axioms to facts):
 <ul>
 <li><b>Infer class membership</b>: Student ⊑ Person and Student(Alice) → Person(Alice).</li>
@@ -436,6 +455,7 @@ window.TOPICS.push({
     { h: "4. Knowledge graph", html: `
 <p>Real-world <b>entities</b> as nodes and <b>relationships</b> as labelled edges, storing <b>facts</b>. Often organised by an ontology (schema).</p>
 <div class="formula">Fact = <b>triple</b> (subject, predicate, object): (Student, enrolledIn, Course), (Douglas Adams, place of birth, Cambridge)</div>
+<div class="svgwrap">${SVG.kg}<p class="figcap">Every edge is one (subject, predicate, object) triple.</p></div>
 <p>Example: <b>Wikidata</b>. Each item has an ID (Douglas Adams = Q42). Stored as <b>RDF</b> triples, queried with <b>SPARQL</b>.</p>
 <div class="example">SELECT ?item ?itemLabel ?pic WHERE { ?item wdt:P31 wd:Q146 . ?item wdt:P18 ?pic . }<br>
 = find items that are an <b>instance of</b> (P31) <b>cat</b> (Q146) and have an <b>image</b> (P18). ?x = variable. Items without an image are not returned.</div>

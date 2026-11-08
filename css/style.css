@@ -120,6 +120,47 @@ svg.diagram .ln.dash{stroke-dasharray:5 4}
 svg.diagram .ahp{fill:var(--muted)}
 svg.diagram .curve{fill:none;stroke:var(--accent);stroke-width:3}
 svg.diagram .trap{fill:var(--accent2);stroke:var(--accent)}
+/* Extra diagram classes */
+svg.diagram .c{fill:var(--panel);stroke:var(--muted);stroke-width:1}
+svg.diagram .c2{fill:var(--panel2);stroke:var(--muted);stroke-width:1}
+svg.diagram .hl{fill:var(--accent2);stroke:var(--accent);stroke-width:2}
+svg.diagram .gd{fill:var(--goodbg);stroke:var(--good);stroke-width:1.5}
+svg.diagram .bd{fill:var(--badbg);stroke:var(--bad);stroke-width:1.5}
+svg.diagram .wn{fill:var(--warnbg);stroke:var(--fr);stroke-width:1.5}
+svg.diagram .wall{fill:var(--muted);stroke:var(--muted)}
+svg.diagram .ax{stroke:var(--muted);stroke-width:1.2;fill:none}
+svg.diagram .p1{stroke:var(--accent);stroke-width:2.6;fill:none}
+svg.diagram .p2{stroke:var(--fr);stroke-width:2.6;fill:none}
+svg.diagram .p3{stroke:var(--good);stroke-width:2.6;fill:none}
+svg.diagram .p4{stroke:var(--bad);stroke-width:2.2;fill:none}
+svg.diagram .dash{stroke-dasharray:5 4}
+svg.diagram .thin{stroke-width:.9;opacity:.7}
+svg.diagram .ln.red{stroke:var(--bad);stroke-width:2.2}
+svg.diagram .ln.blue{stroke:var(--exp);stroke-width:2.2}
+svg.diagram .ln.grn{stroke:var(--good);stroke-width:2}
+svg.diagram .dot1{fill:var(--accent)} svg.diagram .dot2{fill:var(--fr)} svg.diagram .dot3{fill:var(--good)} svg.diagram .dot4{fill:var(--bad)}
+svg.diagram .ring{fill:none;stroke:var(--good);stroke-width:2;stroke-dasharray:4 3}
+svg.diagram .op{fill:var(--panel);stroke:var(--text);stroke-width:1.5}
+svg.diagram .qn{fill:var(--accent)} svg.diagram text.qt{fill:#fff;font-weight:700}
+svg.diagram .atk{stroke:var(--bad);stroke-width:3}
+svg.diagram .sl1{fill:var(--accent);opacity:.55} svg.diagram .sl2{fill:var(--fr);opacity:.55} svg.diagram .sl3{fill:var(--good);opacity:.55} svg.diagram .sl4{fill:var(--bad);opacity:.55}
+svg.diagram .zoneA{fill:var(--accent);opacity:.14} svg.diagram .zoneB{fill:var(--fr);opacity:.16}
+svg.diagram .inter{fill:var(--accent);opacity:.35}
+svg.diagram .boxA{fill:var(--accent);fill-opacity:.12;stroke:var(--accent);stroke-width:2}
+svg.diagram .boxB{fill:var(--fr);fill-opacity:.12;stroke:var(--fr);stroke-width:2}
+svg.diagram .nmsGood{fill:none;stroke:var(--good);stroke-width:2.5}
+svg.diagram .nmsBad{fill:none;stroke:var(--bad);stroke-width:2;stroke-dasharray:6 4}
+svg.diagram .nmsGood.tagbg{fill:var(--goodbg);stroke-dasharray:none} svg.diagram .nmsBad.tagbg{fill:var(--badbg);stroke-dasharray:none}
+svg.diagram .barw{fill:var(--accent);opacity:.7}
+svg.diagram .b.hl2 rect{fill:var(--warnbg);stroke:var(--fr);stroke-width:2}
+svg.diagram .b.ok rect{fill:var(--goodbg);stroke:var(--good)}
+svg.diagram .b.no rect{fill:var(--badbg);stroke:var(--bad)}
+svg.diagram .b.or rect{fill:var(--warnbg);stroke:var(--fr)}
+svg.diagram text.tg{fill:var(--good)} svg.diagram text.tb{fill:var(--bad)} svg.diagram text.ta{fill:var(--accent)} svg.diagram text.to{fill:var(--fr)}
+svg.diagram text.tblue{fill:var(--exp);font-weight:600} svg.diagram text.tred{fill:var(--bad);font-weight:600}
+svg.diagram text.tp1{fill:var(--accent);font-weight:600} svg.diagram text.tp2{fill:var(--fr);font-weight:600} svg.diagram text.tp4{fill:var(--bad);font-weight:600}
+svg.diagram text.bold{font-weight:700} svg.diagram text.sm{font-size:11px} svg.diagram text.lg{font-size:17px}
+.figcap{font-size:.85rem;color:var(--muted);text-align:center;margin:4px 0 0}
 
 /* Widgets */
 .wbox{border:1px dashed var(--accent);border-radius:12px;padding:12px 14px;margin:12px 0;background:var(--panel)}
