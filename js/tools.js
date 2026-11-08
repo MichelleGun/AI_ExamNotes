@@ -106,10 +106,34 @@ window.WIDGETS = (function () {
   function sa(el) {
     el.appendChild(h(`<div class="wbox"><div class="wtitle">Try it: SA acceptance probability p = e<sup>-ΔE/T</sup></div>
       <div class="row"><label>ΔE <input type="range" class="de" min="0" max="20" step="0.5" value="2"> <span class="dev"></span></label>
-      <label>T <input type="range" class="t" min="0.5" max="40" step="0.5" value="10"> <span class="tv"></span></label></div>
-      <div class="bar"><div class="fill"></div></div><div class="out"></div></div>`));
-    const up = () => { const d = num(el, ".de"), t = num(el, ".t"), p = Math.exp(-d / t); el.querySelector(".dev").textContent = d; el.querySelector(".tv").textContent = t; el.querySelector(".fill").style.width = (p * 100) + "%"; el.querySelector(".out").innerHTML = `p = e^(-${d}/${t}) = <b>${rd(p, 4)}</b>. ${p > 0.5 ? "Likely to accept the worse move (exploring)." : p > 0.1 ? "Sometimes accepts." : "Almost never accepts (like hill climbing)."}`; };
-    el.querySelectorAll("input").forEach(i => i.oninput = up); up();
+      <label>T <input type="range" class="t" min="0.5" max="40" step="0.5" value="10"> <span class="tv"></span></label>
+      <button class="btn ghost draw">Draw random r</button></div>
+      <div class="sacurve"></div>
+      <div class="bar"><div class="fill"></div></div><div class="out"></div><div class="rout small"></div></div>`));
+    const rng = window.makeRng ? window.makeRng(67) : Math.random;
+    const W = 520, H = 190, x0 = 45, y0 = 15, pw = 455, ph = 140;
+    const X = d => x0 + d / 20 * pw, Y = p => y0 + (1 - p) * ph;
+    const up = () => {
+      const d = num(el, ".de"), t = num(el, ".t"), p = Math.exp(-d / t);
+      el.querySelector(".dev").textContent = d; el.querySelector(".tv").textContent = t;
+      let path = ""; for (let i = 0; i <= 100; i++) { const dd = 20 * i / 100; path += (i ? "L" : "M") + X(dd).toFixed(1) + "," + Y(Math.exp(-dd / t)).toFixed(1); }
+      el.querySelector(".sacurve").innerHTML = `<svg class="diagram" viewBox="0 0 ${W} ${H}" role="img" aria-label="Live acceptance curve">
+        <line class="ax" x1="${x0}" y1="${y0 + ph}" x2="${x0 + pw}" y2="${y0 + ph}"/><line class="ax" x1="${x0}" y1="${y0}" x2="${x0}" y2="${y0 + ph}"/>
+        <text class="lbl" x="${x0 - 6}" y="${y0 + 5}" text-anchor="end">1</text><text class="lbl" x="${x0 - 6}" y="${y0 + ph + 4}" text-anchor="end">0</text>
+        <text class="lbl" x="${x0 + pw}" y="${y0 + ph + 20}" text-anchor="end">ΔE (0 to 20)</text><text class="lbl" x="${x0}" y="${y0 + ph + 20}">0</text>
+        <path class="p1" d="${path}"/>
+        <line class="ln dash" x1="${X(d)}" y1="${y0 + ph}" x2="${X(d)}" y2="${Y(p)}"/><line class="ln dash" x1="${x0}" y1="${Y(p)}" x2="${X(d)}" y2="${Y(p)}"/>
+        <circle class="dot2" cx="${X(d)}" cy="${Y(p)}" r="7"/>
+        <text class="bold" x="${Math.min(X(d) + 10, x0 + pw - 80)}" y="${Math.max(Y(p) - 10, y0 + 12)}">p = ${rd(p, 3)}</text>
+        <text class="lbl" x="${x0 + pw}" y="${y0 + 12}" text-anchor="end">curve for T = ${t}</text></svg>`;
+      el.querySelector(".fill").style.width = (p * 100) + "%";
+      el.querySelector(".out").innerHTML = `p = e^(-${d}/${t}) = <b>${rd(p, 4)}</b>. ${p > 0.5 ? "Likely to accept the worse move (exploring)." : p > 0.1 ? "Sometimes accepts." : "Almost never accepts (like hill climbing)."}`;
+      el.querySelector(".rout").innerHTML = "";
+      return p;
+    };
+    el.querySelectorAll("input").forEach(i => { i.oninput = up; i.onchange = up; });
+    el.querySelector(".draw").onclick = () => { const p = up(), r = rng(); el.querySelector(".rout").innerHTML = `r = ${rd(r, 3)} ${r < p ? "&lt;" : "≥"} p = ${rd(p, 3)} → <b class="${r < p ? "okc" : "bad"}">${r < p ? "ACCEPT the worse move" : "REJECT, stay put"}</b>`; };
+    up();
   }
 
   // ---------- Decision tree calculator ----------
@@ -211,7 +235,7 @@ window.WIDGETS = (function () {
       <div class="row small">A: <input class="c" value="0" size="2"><input class="c" value="0" size="2"> to <input class="c" value="6" size="2"><input class="c" value="4" size="2"> &nbsp; B: <input class="c" value="2" size="2"><input class="c" value="0" size="2"> to <input class="c" value="8" size="2"><input class="c" value="4" size="2"> &nbsp; threshold <input class="th" value="0.4" size="3"></div>
       <div class="iousvg"></div><div class="out"></div></div>`));
     const go = () => {
-      const c = [...el.querySelectorAll(".c")].map(i => +i.value); const [a1, a2, a3, a4, b1, b2, b3, b4] = c; const th = num(el, ".th");
+      const c = [...el.querySelectorAll(".c")].map(i => +i.value || 0); const [a1, a3] = [Math.min(c[0], c[2]), Math.max(c[0], c[2])], [a2, a4] = [Math.min(c[1], c[3]), Math.max(c[1], c[3])], [b1, b3] = [Math.min(c[4], c[6]), Math.max(c[4], c[6])], [b2, b4] = [Math.min(c[5], c[7]), Math.max(c[5], c[7])]; const th = num(el, ".th");
       const iw = Math.max(0, Math.min(a3, b3) - Math.max(a1, b1)), ih = Math.max(0, Math.min(a4, b4) - Math.max(a2, b2)), I = iw * ih, A = (a3 - a1) * (a4 - a2), B = (b3 - b1) * (b4 - b2), U = A + B - I, io = U ? I / U : 0;
       const mx = Math.max(a3, b3, 10), my = Math.max(a4, b4, 6), s = 300 / Math.max(mx, my);
       const R = (x1, y1, x2, y2, cls) => `<rect class="${cls}" x="${x1 * s + 10}" y="${(my - y2) * s + 10}" width="${(x2 - x1) * s}" height="${(y2 - y1) * s}"/>`;

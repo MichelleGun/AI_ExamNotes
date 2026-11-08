@@ -258,3 +258,23 @@ l12: [
 ["Category reasoning steps?", "Perceive properties → classify into a category → predict other properties."]
 ]
 };
+
+// Figure shown on the back of a card (card index → diagram key in window.SVG)
+window.CARD_FIGS = (function () {
+  const m = {
+    l2: { searchTree: [3, 4], frontier: [5, 6, 7, 11, 12, 13], heuristic: [8, 9, 10, 18, 19, 20, 21, 22] },
+    l3: { landscape: [0, 7, 8], queens: [3, 4, 5], saProb: [9, 10, 11, 12, 13], ga: [14, 15, 16, 17] },
+    l4: { overfit: [3, 4], impurity: [5, 8, 11], dtree: [6, 7, 9, 10], linreg: [13, 14], logistic: [15], knn: [16, 17], svm: [18, 19, 20, 21], ensemble: [22, 23], confusion: [24] },
+    l5: { neuron: [1, 2], activations: [3, 4, 5, 6], perceptron: [7, 8], mlp: [9, 10, 11], backprop: [12, 13, 14], rnn: [16, 17, 18], lstm: [19, 20, 21, 22] },
+    l6: { grid: [0, 3, 9, 10], qbackup: [5, 6, 7, 8, 12], rlLoop: [13, 18, 19, 20] },
+    l7: { cnnPipe: [0, 15, 16], convCalc: [3, 4, 5], pool: [11, 12], rf: [13, 14], resblock: [17], iou: [18], nms: [19, 20] },
+    l8: { rnnCell: [1, 2, 3, 4, 5], seqTypes: [6, 7, 8], lstm: [9], embed: [10, 11], w2v: [12], attention: [16, 17, 18, 19] },
+    l9: { ae: [4, 5, 6, 7, 8], vae: [9, 10, 11, 12], gan: [13, 14, 15, 16, 17] },
+    l10: { entail: [7], wumpus: [8, 9], resolution: [11, 14, 15] },
+    l11: { condVenn: [0, 1], bn: [8, 9, 10, 11], enumTree: [12, 13, 14] },
+    l12: { semnet: [1, 2, 3, 5, 6, 7, 8], ontology: [9, 10, 11], kg: [12, 13, 14] }
+  };
+  const out = {};
+  Object.entries(m).forEach(([t, o]) => Object.entries(o).forEach(([k, idx]) => idx.forEach(i => out[t + "-" + i] = k)));
+  return out;
+})();

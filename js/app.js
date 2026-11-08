@@ -128,7 +128,7 @@
     const [, page = "", a = "", b = ""] = (location.hash || "#/").split("/");
     $$(".nav a").forEach(x => x.classList.toggle("on", x.getAttribute("href").split("/")[1] === page));
     window.scrollTo(0, 0);
-    ({ "": home, topic: topicPage, topics: topicsList, cards: cardsPage, quiz: quizPage, practice: practicePage, tools: toolsPage, sheet: sheetPage, notes: notesPage, board: boardPage }[page] || home)(a, b);
+    ({ "": home, topic: topicPage, topics: topicsList, cards: cardsPage, quiz: quizPage, practice: practicePage, tools: toolsPage, sheet: sheetPage, notes: notesPage, board: boardPage }[page] || home)(a || undefined, b || undefined);
     WIDGETS.mount(main);
   }
   window.addEventListener("hashchange", route);
@@ -173,7 +173,7 @@
       if (!list.length) { wrap.innerHTML = `<div class="empty">No cards here. ${mode === "saved" ? "Save cards with the star button." : "All mastered! Try another mode."}</div>`; return; }
       const c = list[i % list.length]; const sv = S.saved.cards.includes(c.id); const bx = S.box[c.id] || 0;
       wrap.innerHTML = `<div class="fcmeta"><span>${(i % list.length) + 1} / ${list.length}</span><span>L${topicById(c.t).num}</span><span>Level ${bx}/5</span></div>
-        <div class="flash" tabindex="0"><div class="inner"><div class="face front">${esc(c.f)}</div><div class="face back">${esc(c.b)}</div></div></div>
+        <div class="flash" tabindex="0"><div class="inner"><div class="face front">${esc(c.f)}</div><div class="face back"><div>${esc(c.b)}</div>${(window.CARD_FIGS || {})[c.id] && SVG[CARD_FIGS[c.id]] ? `<div class="cfig">${SVG[CARD_FIGS[c.id]]}</div>` : ""}</div></div></div>
         <div class="fcbtns"><button class="btn ghost again">Again</button><button class="btn star ${sv ? "on" : ""}" title="Save card">${sv ? "★ Saved" : "☆ Save"}</button><button class="btn good">Got it</button></div>`;
       const fl = $(".flash", wrap); fl.onclick = () => fl.classList.toggle("flip");
       $(".again", wrap).onclick = () => { S.box[c.id] = Math.max(0, bx - 1); stat(c.t).cards++; award(0); next(); };
