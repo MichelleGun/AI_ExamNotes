@@ -30,6 +30,27 @@ input,select,textarea{font:inherit;color:var(--text);background:var(--panel);bor
 textarea{width:100%}
 input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 
+/* Onboarding tour */
+.onb{position:fixed;inset:0;z-index:55;background:rgba(10,10,20,.55);display:flex;align-items:center;justify-content:center;padding:16px}
+.onb[hidden]{display:none}
+.onbcard{position:relative;background:var(--panel);color:var(--text);border-radius:18px;padding:22px 24px 18px;width:100%;max-width:600px;max-height:92vh;overflow:auto;box-shadow:0 12px 44px rgba(0,0,0,.35)}
+.onbcard h2{margin:.4em 0 .5em;font-size:1.35rem}
+.onbcard .x{position:absolute;top:8px;right:12px;background:none;border:0;font-size:1.6rem;color:var(--muted);cursor:pointer}
+.onbdots{display:flex;gap:6px;padding-right:36px;flex-wrap:wrap}
+.onbdots span{width:22px;height:5px;border-radius:3px;background:var(--line)}
+.onbdots span.done{background:var(--accent);opacity:.45}
+.onbdots span.on{background:var(--accent)}
+.onbbody p{margin:.5em 0}
+.onbl{padding-left:1.2em;margin:.4em 0}
+.onbl li{margin:.3em 0}
+.onbl.cols{columns:2;column-gap:24px}
+.onbfig{background:var(--panel2);border-radius:12px;padding:8px;margin-top:10px}
+.tipline{background:var(--warnbg);color:var(--text);border-left:4px solid var(--fr);padding:8px 12px;border-radius:8px}
+.onbbtns{display:flex;gap:8px;justify-content:space-between;margin-top:16px;flex-wrap:wrap}
+.onbbtns .btn{flex:1;min-width:120px}
+.onbnote{margin:10px 0 0;text-align:center}
+@media (max-width:600px){.onbcard{padding:18px 16px 14px}.onbl.cols{columns:1}.onbcard h2{font-size:1.15rem}}
+
 /* Top bar */
 .top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line)}
 .brand{display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--text);font-weight:700}
@@ -314,7 +335,7 @@ input.bad,select.bad{border-color:var(--bad);background:var(--badbg)}
 /* ===== Print / PDF ===== */
 @media print{
   body{background:#fff;color:#000;font-size:11pt}
-  .top,.nav,#main,.modal,.toast{display:none !important}
+  .top,.nav,#main,.modal,.onb,.toast{display:none !important}
   .printarea{display:block !important}
   .printarea h1{font-size:16pt;margin:0 0 6pt}
   .printarea h2{font-size:12.5pt;margin:10pt 0 4pt;border-bottom:1px solid #999;break-after:avoid}

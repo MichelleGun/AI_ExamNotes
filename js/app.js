@@ -10,7 +10,7 @@
 
   // ---------- State ----------
   const KEY = "aiexam_v1";
-  const blank = () => ({ points: 0, pending: { p: 0, q: 0, c: 0, k: 0 }, box: {}, saved: { cards: [], sections: [] }, notes: [], stats: {}, streak: { last: "", days: 0 }, updated: 0 });
+  const blank = () => ({ points: 0, pending: { p: 0, q: 0, c: 0, k: 0 }, box: {}, saved: { cards: [], sections: [] }, notes: [], stats: {}, streak: { last: "", days: 0 }, onb: {}, updated: 0 });
   let S = blank();
   try { S = Object.assign(blank(), JSON.parse(localStorage.getItem(KEY) || "{}")); } catch (e) { }
   let saveTimer = null;
@@ -48,6 +48,7 @@
     const { data: d } = await sb.from("user_data").select("data").eq("id", user.id).maybeSingle();
     if (d && d.data && Object.keys(d.data).length) mergeRemote(d.data);
     if (profile) S.points = Math.max(profile.points + S.pending.p, S.points);
+    if (tourDoneThisVisit) { S.onb[user.id] = true; cloudSave(); }
     save(); renderPoints(); route();
   }
   function mergeRemote(r) {
@@ -57,10 +58,11 @@
     Object.entries(r.box || {}).forEach(([k, v]) => { S.box[k] = Math.max(v, S.box[k] || 0); });
     Object.entries(r.stats || {}).forEach(([k, v]) => { const s = stat(k); s.right = Math.max(s.right, v.right || 0); s.total = Math.max(s.total, v.total || 0); s.cards = Math.max(s.cards, v.cards || 0); });
     if (r.streak && r.streak.last > S.streak.last) S.streak = r.streak;
+    if (r.onboarded && user) S.onb[user.id] = true;
   }
   async function cloudSave() {
     if (!sb || !user) return;
-    const data = { saved: S.saved, notes: S.notes, box: S.box, stats: S.stats, streak: S.streak };
+    const data = { saved: S.saved, notes: S.notes, box: S.box, stats: S.stats, streak: S.streak, onboarded: !!(S.onb && S.onb[user.id]) };
     await sb.from("user_data").upsert({ id: user.id, data, updated_at: new Date().toISOString() });
   }
   async function flushPoints() {
@@ -331,8 +333,60 @@
     const jl = $("#jl"); if (jl) jl.onclick = e => { e.preventDefault(); openAuth(); };
   }
 
+  // ---------- Onboarding tour ----------
+  // Shows on every load unless the signed-in user has already finished it (saved in their account).
+  let tourDoneThisVisit = false;
+  function tourSteps() {
+    const nC = Object.values(window.CARDS).reduce((n, a) => n + a.length, 0);
+    const nQ = Object.values(window.QUESTIONS).reduce((n, a) => n + a.length, 0);
+    return [
+      { h: "Welcome to AI Exam Revision", b: `<p>Everything for the final exam in one place: <b>Lectures 2 to 12</b>. Module 1 is not examined.</p><p>This 2 minute tour shows <b>what the exam wants</b> and <b>how to use every feature</b>.</p><div class="onbfig">${SVG.cnnPipe}</div>` },
+      { h: "1. The exam format", b: `<ul class="onbl"><li><b>120 minutes</b>, final exam.</li><li>Question types: <b>multiple choice</b>, <b>multiple answers</b>, <b>true / false</b>, <b>fill in single or multiple blanks</b>, <b>matching</b>.</li><li><b>Calculator allowed</b>. <b>Hard-copy notes allowed</b>, so print your notes from this site.</li></ul><p class="tipline">Fill-in-the-blank answers must be exact numbers. Practise rounding the way the question asks.</p>` },
+      { h: "2. What the exam is looking for", b: `<p>Two things: <b>understand the concepts</b> (what each method does, when to use it, its keywords) and <b>do the calculations step by step</b>.</p><p><b>Calculations you must be able to do:</b></p><ul class="onbl cols"><li>Search f(n): UCS, Greedy, A*</li><li>Loss functions</li><li>MDP Q-values and utilities</li><li>Entropy, info gain, Gini</li><li>Naive Bayes, Bayesian networks</li><li>Conv output, pooling, receptive field, parameters</li><li>IoU and NMS</li><li>Simple RNN hidden state</li><li>Attention weighted sum</li></ul>` },
+      { h: "3. Lecture notes", b: `<p>Open any lecture from the menu. Each one has short notes with <b>keywords</b>, <b>formulas</b>, <b>worked examples</b>, <b>diagrams</b>, <b>analogies</b> and <b>exam tips</b>.</p><p>Tap <b>☆ Save section</b> to add a section to your printable notes.</p><div class="onbfig">${SVG.attention}</div>` },
+      { h: "4. Flashcards", b: `<p><b>${nC}</b> cards. Tap a card to flip it. Many have a <b>diagram on the back</b>.</p><ul class="onbl"><li><b>Got it</b> moves a card up a level, <b>Again</b> moves it down. Weak cards come first.</li><li><b>☆ Save</b> keeps a card for your PDF notes.</li><li>Filter by lecture, "not mastered" or "my saved cards".</li><li>Keyboard: space = flip, 1 = again, 2 = got it, S = save.</li></ul>` },
+      { h: "5. Quiz and calculation practice", b: `<ul class="onbl"><li><b>Quiz</b>: ${nQ} questions in all five exam formats, with explanations. "Mixed exam" = 20 questions including calculations.</li><li><b>Calc practice</b>: ${window.GENERATORS.length} calculation types with <b>unlimited new numbers</b>. Use your calculator, check, then read the worked steps.</li></ul><p class="tipline">Testing yourself beats rereading notes. Spend most of your time here.</p>` },
+      { h: "6. Animations and tools", b: `<p>Interactive tools to <b>see</b> how things work: search on the Romania map (BFS, DFS, UCS, Greedy, A*), 8-queens hill climbing, simulated annealing, IG and Gini calculator, backprop, grid world value iteration, convolution animation, receptive field, IoU and NMS, RNN, attention, truth tables and Bayesian network inference.</p><div class="onbfig">${SVG.grid}</div>` },
+      { h: "7. Cheat sheet, notes and PDF", b: `<ul class="onbl"><li><b>Cheat sheet</b>: every formula on one page, ready to print.</li><li><b>My notes + PDF</b>: write your own notes, see saved cards and sections, then <b>Export PDF</b> and choose "Save as PDF" or print it.</li></ul><p class="tipline">You can bring hard-copy notes into the exam. Build them here as you study.</p>` },
+      { h: "8. Points, leaderboard and your account", b: `<ul class="onbl"><li>Earn points: card "Got it" +1, correct quiz answer +2, correct calculation +3, 80%+ quiz bonus +5.</li><li><b>Leaderboard</b>: compete with friends.</li><li><b>Create an account</b> (username and password, no email) to join the leaderboard, keep progress on every device, and stop this tour from showing again.</li><li>Light / dark mode button at the top. On a phone, use the bottom bar and the ☰ menu.</li></ul>`, last: true }
+    ];
+  }
+  function openTour(start = 0) {
+    const STEPS = tourSteps();
+    let i = start; const w = $("#onb");
+    const close = () => { w.hidden = true; document.removeEventListener("keydown", key); };
+    const finish = () => { tourDoneThisVisit = true; if (user) { S.onb[user.id] = true; save(); cloudSave(); } close(); };
+    const key = e => { if (w.hidden) return; if (e.key === "Escape") close(); else if (e.key === "ArrowRight" && i < STEPS.length - 1) { i++; draw(); } else if (e.key === "ArrowLeft" && i > 0) { i--; draw(); } };
+    function draw() {
+      const st = STEPS[i];
+      w.innerHTML = `<div class="onbcard" role="dialog" aria-modal="true" aria-label="Site tour"><button class="x" aria-label="Close tour">×</button>
+        <div class="onbdots">${STEPS.map((_, k) => `<span class="${k === i ? "on" : k < i ? "done" : ""}"></span>`).join("")}</div>
+        <h2>${st.h}</h2><div class="onbbody">${st.b}</div>
+        <div class="onbbtns">${i ? `<button class="btn ghost prevb">Back</button>` : `<button class="btn ghost skip">Skip for now</button>`}
+        ${st.last ? (user ? `<button class="btn fin">Start studying</button>` : `<button class="btn ghost fin">Start as guest</button><button class="btn fin up">Create account</button>`) : `<button class="btn next">Next</button>`}</div>
+        ${st.last && !user ? `<p class="small muted onbnote">Guests see this tour each time the site opens. Sign in to turn it off. <a href="#" class="si">I have an account</a></p>` : ""}</div>`;
+      w.hidden = false;
+      $(".x", w).onclick = close; const sk = $(".skip", w); if (sk) sk.onclick = close;
+      const bk = $(".prevb", w); if (bk) bk.onclick = () => { i--; draw(); };
+      const nx = $(".next", w); if (nx) nx.onclick = () => { i++; draw(); };
+      $$(".fin", w).forEach(b => b.onclick = () => { finish(); if (b.classList.contains("up")) openAuth("up"); });
+      const si = $(".si", w); if (si) si.onclick = e => { e.preventDefault(); finish(); openAuth("in"); };
+      const f = $(".next, .fin.up, .fin", w); if (f) f.focus({ preventScroll: true });
+    }
+    document.addEventListener("keydown", key);
+    draw();
+  }
+  window.openTour = openTour;
+  function maybeTour() { if (user && S.onb && S.onb[user.id]) return; openTour(0); }
+
   // ---------- Boot ----------
   $("#menu").onclick = () => document.body.classList.toggle("navopen");
   $$(".nav a").forEach(a => a.addEventListener("click", () => document.body.classList.remove("navopen")));
-  renderPoints(); initAuth(); route();
+  if (!S.onb) S.onb = {};
+  const tourLink = document.createElement("a"); tourLink.href = "javascript:void(0)"; tourLink.textContent = "Site tour"; tourLink.onclick = () => { document.body.classList.remove("navopen"); openTour(0); };
+  const navh = $(".nav.side .navh"); if (navh) navh.before(tourLink);
+  renderPoints(); route();
+  let tourShown = false; const showOnce = () => { if (!tourShown) { tourShown = true; maybeTour(); } };
+  setTimeout(showOnce, 4000);
+  initAuth().then(showOnce, showOnce);
 })();
