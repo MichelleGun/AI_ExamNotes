@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AI Exam Revision</title>
+<meta name="description" content="Notes, flashcards, quizzes, calculation practice and animations for the AI final exam (Lectures 2 to 12).">
+<meta name="theme-color" content="#4f46e5">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%234f46e5'/><text x='32' y='42' font-size='28' font-family='Arial' font-weight='700' fill='white' text-anchor='middle'>AI</text></svg>">
+<link rel="stylesheet" href="css/style.css">
+<script>try{var t=localStorage.getItem("aiexam_theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
+</head>
+<body>
+<header class="top">
+  <button id="menu" class="iconbtn" aria-label="Menu">☰</button>
+  <a href="#/" class="brand"><span class="logo">AI</span><span class="bt">Exam Revision</span></a>
+  <div class="topright">
+    <span class="ptsbadge" title="Your points"><b class="pts">0</b> pts</span>
+    <button id="theme" class="btn small ghost" aria-label="Toggle dark mode">Dark</button>
+    <div id="authbox"></div>
+  </div>
+</header>
+
+<nav class="nav side" aria-label="Main">
+  <a href="#/">Home</a>
+  <a href="#/cards">Flashcards</a>
+  <a href="#/quiz">Quiz</a>
+  <a href="#/practice">Calc practice</a>
+  <a href="#/tools">Animations and tools</a>
+  <a href="#/sheet">Cheat sheet</a>
+  <a href="#/notes">My notes + PDF</a>
+  <a href="#/board">Leaderboard</a>
+  <div class="navh">Lectures</div>
+  <div id="topiclinks"></div>
+</nav>
+
+<main id="main" tabindex="-1"></main>
+
+<nav class="nav bottom" aria-label="Quick">
+  <a href="#/"><span>⌂</span>Home</a>
+  <a href="#/cards"><span>▤</span>Cards</a>
+  <a href="#/quiz"><span>?</span>Quiz</a>
+  <a href="#/practice"><span>∑</span>Calc</a>
+  <a href="#/notes"><span>✎</span>Notes</a>
+</nav>
+
+<div id="modal" class="modal" hidden></div>
+<div id="toast" class="toast"></div>
+<div id="print" class="printarea"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="js/config.js"></script>
+<script src="js/svg.js"></script>
+<script src="js/content-a.js"></script>
+<script src="js/content-b.js"></script>
+<script src="js/cards.js"></script>
+<script src="js/questions.js"></script>
+<script src="js/gen.js"></script>
+<script src="js/cheatsheet.js"></script>
+<script src="js/tools.js"></script>
+<script>
+  document.getElementById("topiclinks").innerHTML = window.TOPICS.slice().sort(function(a,b){return a.num-b.num}).map(function(t){return '<a href="#/topic/'+t.id+'">L'+t.num+' '+t.title+'</a>'}).join("");
+</script>
+<script src="js/app.js"></script>
+</body>
+</html>
