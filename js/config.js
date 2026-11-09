@@ -9,7 +9,17 @@ window.APP_CONFIG = {
 
   // Usernames are turned into a hidden login email: username@USERNAME_DOMAIN
   // No email is ever sent. Keep this the same after friends sign up.
+  // Supabase only accepts emails on a real domain that can receive mail.
+  // Set this to an inbox YOU control, e.g. "yourname+{username}@gmail.com".
+  // Keep it the same after friends sign up, or their logins stop matching.
+  LOGIN_EMAIL_TEMPLATE: "michelleaiccount+{username}@gmail.com",
   USERNAME_DOMAIN: "aiexam-revision.app",
+
+  // Feedback form sends to this address through formsubmit.co (free, no account).
+  // The FIRST message sends you an "Activate form" email. Click it once, then feedback arrives.
+  // After that, formsubmit emails you a random alias. Paste it here instead of your email
+  // so your real address is not visible in the site's code.
+  FEEDBACK_EMAIL: "michellgun29@gmail.com",
 
   // Random seed for generated practice questions
   SEED: 67

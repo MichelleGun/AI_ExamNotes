@@ -398,6 +398,35 @@ P(B | j, m) = 0.000592 / (0.000592 + 0.001492) ≈ <b>0.284</b></div>
 <div class="widget" data-widget="bn"></div>
 <p>Enumeration is exact but <b>repeats calculations</b> (e.g. P(j|a)P(m|a) several times) and does not scale. Better exact: <b>variable elimination</b>. Big networks: <b>approximate inference</b> (direct sampling, rejection sampling, likelihood weighting, MCMC). Focus: exact inference in <b>static</b> worlds.</p>
 <div class="analogy"><b>Analogy:</b> a BN is a family tree of causes. Instead of memorising every family photo (full joint table), you remember how each child resembles its parents (CPTs).</div>
+`},
+    { h: "6. Exam calculation recipe (Bayes and BN)", html: `
+<div class="box"><b>Which formula?</b>
+<ul>
+<li>Given P(A), P(B) and they are <b>independent</b>: AND = multiply, OR = P(A) + P(B) - P(A)P(B), NOT = 1 - P.</li>
+<li>Given a <b>full joint table</b>: marginal = add the matching rows. Conditional = P(both) / P(given).</li>
+<li>Given <b>P(effect | cause)</b> but asked <b>P(cause | effect)</b>: Bayes' rule. Find the bottom with <b>total probability</b>: P(e) = Σ<sub>c</sub> P(e | c) P(c).</li>
+<li>Given a <b>Bayesian network</b> and asked P(query | evidence): enumeration.</li>
+</ul></div>
+<div class="box"><b>Enumeration in 5 steps</b>
+<ol>
+<li>Label variables: <b>query</b> (B), <b>evidence</b> (j, m), <b>hidden</b> (E, A).</li>
+<li>Write s<sub>B</sub> = P(b) Σ<sub>e</sub> P(e) Σ<sub>a</sub> P(a | b, e) P(j | a) P(m | a). Factors that do not contain a summed variable move outside its sum.</li>
+<li>Inside out: for each E value, add the a and ¬a terms. Then weight by P(e), P(¬e) and add. Then multiply by P(b).</li>
+<li>Repeat with ¬b. Only the <b>Alarm CPT</b> changes (use the f,t and f,f rows).</li>
+<li><b>Normalise</b>: P(b | j, m) = s<sub>B</sub> / (s<sub>B</sub> + s<sub>¬B</sub>). The two answers must sum to 1.</li>
+</ol></div>
+<div class="example"><b>One false call</b>: P(b | j, ¬m) uses P(¬m | a) = 1 - 0.70 = 0.30 and P(¬m | ¬a) = 1 - 0.01 = 0.99.<br>
+s<sub>B</sub> = 0.001 × {0.002 [0.95·0.90·0.30 + 0.05·0.05·0.99] + 0.998 [0.94·0.90·0.30 + 0.06·0.05·0.99]} ≈ 0.000257<br>
+s<sub>¬B</sub> = 0.999 × {0.002 [0.29·0.90·0.30 + 0.71·0.05·0.99] + 0.998 [0.001·0.90·0.30 + 0.999·0.05·0.99]} ≈ 0.049798<br>
+P(b | j, ¬m) = 0.000257 / (0.000257 + 0.049798) ≈ <b>0.0051</b>. Mary not calling makes a burglary much less likely.</div>
+<div class="warn"><b>Common mistakes</b>
+<ul>
+<li>Forgetting the <b>¬a branch</b> (P(¬a | b, e) = 1 - P(a | b, e)).</li>
+<li>Using P(j | a) for a false call. Use <b>1 - P(j | a)</b>.</li>
+<li>Stopping at s<sub>B</sub>. It is <b>not</b> a probability until you normalise.</li>
+<li>Rounding too early. Keep 4 to 6 significant figures until the last step.</li>
+</ul></div>
+<p class="tipline">Practise: Calc practice has unlimited questions for BN enumeration, marginalising a joint table, probability rules, Bayes with several causes, and Bayes with a negative result.</p>
 `}
   ]
 });

@@ -288,6 +288,8 @@ input.bad,select.bad{border-color:var(--bad);background:var(--badbg)}
 .mcard{position:relative;background:var(--panel);border-radius:16px;padding:22px;width:100%;max-width:420px;max-height:90vh;overflow:auto;box-shadow:0 10px 40px rgba(0,0,0,.3)}
 .mcard label{display:block;margin:10px 0}
 .mcard label input{display:block;width:100%;margin-top:4px}
+.mcard label textarea,.mcard label select{display:block;width:100%;margin-top:4px}
+.mcard textarea{min-height:120px;resize:vertical}
 .mcard .ck input{display:inline;width:auto;margin:0}
 .mcard .x{position:absolute;top:8px;right:12px;background:none;border:0;font-size:1.6rem;color:var(--muted);cursor:pointer}
 .err{color:var(--bad);min-height:1.4em;font-size:.9rem}

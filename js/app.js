@@ -32,7 +32,7 @@
   let sb = null, user = null, profile = null;
   const configured = CFG.SUPABASE_URL && CFG.SUPABASE_ANON_KEY && window.supabase;
   if (configured) sb = window.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY);
-  const emailOf = u => `${u.toLowerCase()}@${CFG.USERNAME_DOMAIN || "aiexam-revision.app"}`;
+  const emailOf = u => CFG.LOGIN_EMAIL_TEMPLATE ? CFG.LOGIN_EMAIL_TEMPLATE.replace("{username}", u.toLowerCase()) : `${u.toLowerCase()}@${CFG.USERNAME_DOMAIN || "aiexam-revision.app"}`;
 
   async function initAuth() {
     if (!sb) { renderAuth(); return; }
@@ -333,6 +333,40 @@
     const jl = $("#jl"); if (jl) jl.onclick = e => { e.preventDefault(); openAuth(); };
   }
 
+  // ---------- Feedback ----------
+  function openFeedback() {
+    const to = CFG.FEEDBACK_EMAIL || "";
+    const name = user ? (profile ? profile.username : (user.user_metadata && user.user_metadata.username) || "") : "";
+    const m = modal(`<h2>Send feedback</h2>
+      <p class="small muted">Found a mistake, a bug, or want a feature? Tell me here.</p>
+      <form id="fbform">
+        <label>Type<select name="t"><option>Bug</option><option>Wrong content</option><option>Feature idea</option><option>Other</option></select></label>
+        <label>Message<textarea name="m" required maxlength="3000" placeholder="What happened, and on which page?"></textarea></label>
+        <label>Your name or contact (optional)<input name="c" maxlength="100" value="${esc(name)}" placeholder="so I can reply"></label>
+        <input name="_honey" style="display:none" tabindex="-1" autocomplete="off">
+        <div class="err"></div><button class="btn">Send</button>
+      </form>`);
+    const f = $("#fbform", m), err = $(".err", m);
+    f.onsubmit = async e => {
+      e.preventDefault();
+      if (f._honey.value) return;
+      const body = { type: f.t.value, message: f.m.value.trim(), contact: f.c.value.trim(), page: location.hash || "#/", _subject: "AI Exam Revision feedback: " + f.t.value, _template: "table", _captcha: "false" };
+      if (!body.message) { err.textContent = "Please write a message."; return; }
+      const mailto = "mailto:" + to + "?subject=" + encodeURIComponent(body._subject) + "&body=" + encodeURIComponent(body.message + "\n\nFrom: " + body.contact + "\nPage: " + body.page);
+      if (!to) { err.textContent = "Feedback is not set up yet."; return; }
+      err.textContent = "Sending...";
+      try {
+        const r = await fetch("https://formsubmit.co/ajax/" + encodeURIComponent(to), { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(body) });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok || String(j.success) === "false") throw new Error(j.message || "Send failed");
+        closeModal(); toast("Thanks! Feedback sent.");
+      } catch (x) {
+        err.innerHTML = `Could not send (${esc(x.message)}). <a href="${mailto}">Send by email app instead</a>.`;
+      }
+    };
+  }
+  window.openFeedback = openFeedback;
+
   // ---------- Onboarding tour ----------
   // Shows on every load unless the signed-in user has already finished it (saved in their account).
   let tourDoneThisVisit = false;
@@ -384,7 +418,8 @@
   $$(".nav a").forEach(a => a.addEventListener("click", () => document.body.classList.remove("navopen")));
   if (!S.onb) S.onb = {};
   const tourLink = document.createElement("a"); tourLink.href = "javascript:void(0)"; tourLink.textContent = "Site tour"; tourLink.onclick = () => { document.body.classList.remove("navopen"); openTour(0); };
-  const navh = $(".nav.side .navh"); if (navh) navh.before(tourLink);
+  const fbLink = document.createElement("a"); fbLink.href = "javascript:void(0)"; fbLink.textContent = "Send feedback"; fbLink.onclick = () => { document.body.classList.remove("navopen"); openFeedback(); };
+  const navh = $(".nav.side .navh"); if (navh) { navh.before(tourLink); navh.before(fbLink); }
   renderPoints(); route();
   let tourShown = false; const showOnce = () => { if (!tourShown) { tourShown = true; maybeTour(); } };
   setTimeout(showOnce, 4000);

@@ -74,7 +74,9 @@ window.CHEATSHEET = `
 
 <div class="cs"><h3>L11 Probability and BN</h3>
 <p>P(A|B) = P(A∧B)/P(B). Bayes: P(B|A) = P(A|B)P(B)/P(A). P(¬A) = 1 - P(A).</p>
+<p>Independent: P(A∧B) = P(A)P(B). OR: P(A)+P(B)-P(A∧B). Total prob: P(e) = Σ<sub>c</sub> P(e|c)P(c).</p>
 <p>P(X|e) = α Σ<sub>y</sub> P(X,e,y). Marginalise = sum out. Full joint: 2<sup>n</sup> rows.</p>
+<p>Enumeration: s<sub>B</sub> = P(b) Σ<sub>e</sub> P(e) Σ<sub>a</sub> P(a|b,e)P(j|a)P(m|a), same for ¬b, then P(b|j,m) = s<sub>B</sub>/(s<sub>B</sub>+s<sub>¬B</sub>). False call: use 1 - CPT.</p>
 <p>BN: P(x<sub>1</sub>..x<sub>n</sub>) = Π P(x<sub>i</sub>|parents). Burglary: P(B)P(E)P(A|B,E)P(J|A)P(M|A).</p>
 <p>P(B)=.001 P(E)=.002; P(a|B,E): tt .95, tf .94, ft .29, ff .001; P(j|a) .90/.05; P(m|a) .70/.01.</p>
 <p>P(j,m,a,¬b,¬e) = .9×.7×.001×.999×.998 = 0.000628. P(B|j,m) = 0.284.</p>

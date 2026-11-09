@@ -213,6 +213,61 @@ window.makeRng = function (seed) {
       return { q: `Joint table: P(a, b) = ${v[0]}, P(a, ¬b) = ${v[1]}, P(¬a, b) = ${v[2]}, P(¬a, ¬b) = ${v[3]}. Find P(b) and P(a | b) (4 d.p.).`, labels: ["P(b)", "P(a|b)"],
         answers: [N(rd(pB), 0.0006), N(rd(pAB / pB), 0.0006)], steps: `P(b) = ${v[0]} + ${v[2]} = ${rd(pB)}<br>P(a|b) = ${v[0]}/${rd(pB)} = <b>${rd(pAB / pB)}</b>` };
   }},
+  { id: "bnenum", topic: "l11", name: "BN enumeration: P(B | calls) with α normalisation", make(r) {
+      const pB = pick(r, [0.001, 0.01, 0.02, 0.05]), pE = pick(r, [0.002, 0.01, 0.02]);
+      const A = { tt: pick(r, [0.95, 0.9]), tf: pick(r, [0.94, 0.9, 0.85]), ft: pick(r, [0.29, 0.3, 0.2]), ff: pick(r, [0.001, 0.01, 0.05]) };
+      const Ja = pick(r, [0.9, 0.8, 0.95]), Jn = pick(r, [0.05, 0.1]), Ma = pick(r, [0.7, 0.6, 0.8]), Mn = pick(r, [0.01, 0.02, 0.05]);
+      const ev = pick(r, [[1, 1], [1, 1], [1, 0], [0, 1]]), jv = ev[0], mv = ev[1];
+      const pj = a => (a ? (jv ? Ja : 1 - Ja) : (jv ? Jn : 1 - Jn)), pm = a => (a ? (mv ? Ma : 1 - Ma) : (mv ? Mn : 1 - Mn));
+      const pa = (b, e) => A[(b ? "t" : "f") + (e ? "t" : "f")];
+      const f = x => +x.toFixed(3);
+      const inner = (b, e) => pa(b, e) * pj(1) * pm(1) + (1 - pa(b, e)) * pj(0) * pm(0);
+      const score = b => (b ? pB : 1 - pB) * (pE * inner(b, 1) + (1 - pE) * inner(b, 0));
+      const sB = score(1), sN = score(0), post = sB / (sB + sN);
+      const jl = jv ? "j" : "¬j", ml = mv ? "m" : "¬m";
+      const line = (b, e) => `${f(pa(b, e))}·${f(pj(1))}·${f(pm(1))} + ${f(1 - pa(b, e))}·${f(pj(0))}·${f(pm(0))}`;
+      const show = b => `s<sub>${b ? "B" : "¬B"}</sub> = ${f(b ? pB : 1 - pB)} × { ${pE} [${line(b, 1)}] + ${f(1 - pE)} [${line(b, 0)}] }<br>= ${f(b ? pB : 1 - pB)} × { ${pE} × ${inner(b, 1).toPrecision(4)} + ${f(1 - pE)} × ${inner(b, 0).toPrecision(4)} } = <b>${(b ? sB : sN).toPrecision(4)}</b>`;
+      return { q: `Burglary network with CPTs: P(b) = ${pB}, P(e) = ${pE}, P(a | B,E): t,t ${A.tt} &nbsp;t,f ${A.tf} &nbsp;f,t ${A.ft} &nbsp;f,f ${A.ff}, P(j | a) = ${Ja}, P(j | ¬a) = ${Jn}, P(m | a) = ${Ma}, P(m | ¬a) = ${Mn}.<br>Evidence: <b>${jl}, ${ml}</b>. Use enumeration to find the unnormalised scores s<sub>B</sub>, s<sub>¬B</sub> (3 significant figures, e.g. 0.000592) and P(b | ${jl}, ${ml}) (4 d.p.).`,
+        labels: ["s<sub>B</sub>", "s<sub>¬B</sub>", `P(b | ${jl}, ${ml})`],
+        answers: [{ n: sB, tol: sB * 0.01 }, { n: sN, tol: sN * 0.01 }, N(rd(post), 0.0006)],
+        steps: `Hidden variables: E and A. s<sub>B</sub> = P(b) Σ<sub>e</sub> P(e) Σ<sub>a</sub> P(a | b, e) P(${jl} | a) P(${ml} | a)<br>${show(1)}<br>${show(0)}<br>Normalise: α = 1 / (s<sub>B</sub> + s<sub>¬B</sub>)<br>P(b | ${jl}, ${ml}) = ${sB.toPrecision(4)} / (${sB.toPrecision(4)} + ${sN.toPrecision(4)}) = <b>${rd(post)}</b>`
+        + (jv && mv ? "" : `<br>Tip: for a false call use 1 minus the CPT value, e.g. P(¬m | a) = 1 - ${Ma} = ${f(1 - Ma)}.`) };
+  }},
+  { id: "marg", topic: "l11", name: "Marginalise and condition from a 3-variable joint table", make(r) {
+      let w = Array.from({ length: 8 }, () => ri(r, 3, 20)); const s = w.reduce((a, b) => a + b);
+      let v = w.map(x => Math.round(x / s * 100)); const big = v.indexOf(Math.max(...v)); v[big] += 100 - v.reduce((a, b) => a + b); v = v.map(x => x / 100);
+      const rows = []; let k = 0; for (const x of [1, 2]) for (const y of [1, 2]) for (const z of [1, 2]) rows.push({ x, y, z, p: v[k++] });
+      const qx = ri(r, 1, 2), qz = ri(r, 1, 2);
+      const sel = fn => rows.filter(fn), sum = a => rd(a.reduce((t, o) => t + o.p, 0), 4), lst = a => a.map(o => o.p).join(" + ");
+      const rX = sel(o => o.x === qx), rZ = sel(o => o.z === qz), rXZ = sel(o => o.x === qx && o.z === qz);
+      const pX = sum(rX), pZ = sum(rZ), pXZ = sum(rXZ);
+      const tbl = `<table class="tbl"><tr><th>X</th><th>Y</th><th>Z</th><th>P</th></tr>${rows.map(o => `<tr><td>x${o.x}</td><td>y${o.y}</td><td>z${o.z}</td><td>${o.p}</td></tr>`).join("")}</table>`;
+      return { q: `Full joint table:${tbl}Find P(X = x${qx}), P(Z = z${qz}) and P(X = x${qx} | Z = z${qz}) (4 d.p.).`,
+        labels: [`P(x${qx})`, `P(z${qz})`, `P(x${qx} | z${qz})`], answers: [N(pX, 0.0006), N(pZ, 0.0006), N(rd(pXZ / pZ), 0.0006)],
+        steps: `Marginalise: keep rows with the value you want, add over every other variable.<br>P(x${qx}) = ${lst(rX)} = <b>${pX}</b><br>P(z${qz}) = ${lst(rZ)} = <b>${pZ}</b><br>P(x${qx}, z${qz}) = ${lst(rXZ)} = ${pXZ}<br>P(x${qx} | z${qz}) = P(x${qx}, z${qz}) / P(z${qz}) = ${pXZ} / ${pZ} = <b>${rd(pXZ / pZ)}</b>` };
+  }},
+  { id: "probrules", topic: "l11", name: "Probability rules: NOT, AND, OR, GIVEN", make(r) {
+      const pA = pick(r, [0.2, 0.3, 0.4, 0.5, 0.6]), pB = pick(r, [0.1, 0.25, 0.3, 0.45, 0.7]);
+      const and = pA * pB, or = pA + pB - and;
+      return { q: `A and B are <b>independent</b>. P(A) = ${pA}, P(B) = ${pB}. Find P(¬A), P(A ∧ B), P(A ∨ B) and P(A | B) (4 d.p.).`,
+        labels: ["P(¬A)", "P(A ∧ B)", "P(A ∨ B)", "P(A | B)"], answers: [N(rd(1 - pA)), N(rd(and)), N(rd(or)), N(rd(pA))],
+        steps: `NOT: P(¬A) = 1 - ${pA} = <b>${rd(1 - pA)}</b><br>AND (independent): P(A ∧ B) = ${pA} × ${pB} = <b>${rd(and)}</b><br>OR (not mutually exclusive, so subtract the overlap): P(A ∨ B) = ${pA} + ${pB} - ${rd(and)} = <b>${rd(or)}</b><br>GIVEN: P(A | B) = P(A ∧ B) / P(B) = ${rd(and)} / ${pB} = <b>${rd(pA)}</b> (equals P(A) because they are independent)` };
+  }},
+  { id: "bayes3", topic: "l11", name: "Bayes with several causes (total probability)", make(r) {
+      let sh = pick(r, [[0.5, 0.3, 0.2], [0.6, 0.3, 0.1], [0.4, 0.35, 0.25], [0.45, 0.35, 0.2]]);
+      const df = [pick(r, [0.01, 0.02, 0.03]), pick(r, [0.02, 0.04, 0.05]), pick(r, [0.05, 0.06, 0.08])];
+      const k = ri(r, 0, 2); const parts = sh.map((s, i) => s * df[i]); const pD = parts.reduce((a, b) => a + b);
+      return { q: `Machines M1, M2, M3 make ${sh.map(x => Math.round(x * 100) + "%").join(", ")} of all parts. Their defect rates are ${df.map(x => Math.round(x * 100) + "%").join(", ")}. A random part is defective. Find P(defective) and P(M${k + 1} | defective) (4 d.p.).`,
+        labels: ["P(defective)", `P(M${k + 1} | defective)`], answers: [N(rd(pD), 0.0006), N(rd(parts[k] / pD), 0.0006)],
+        steps: `Total probability (sum over every cause): P(D) = ${sh.map((s, i) => `${s}×${df[i]}`).join(" + ")} = ${parts.map(x => rd(x, 4)).join(" + ")} = <b>${rd(pD)}</b><br>Bayes: P(M${k + 1} | D) = P(D | M${k + 1}) P(M${k + 1}) / P(D) = ${rd(parts[k], 4)} / ${rd(pD)} = <b>${rd(parts[k] / pD)}</b>` };
+  }},
+  { id: "bayesneg", topic: "l11", name: "Bayes: diagnostic direction with a negative result", make(r) {
+      const pD = pick(r, [0.05, 0.1, 0.2, 0.3]), sens = pick(r, [0.8, 0.85, 0.9]), spec = pick(r, [0.9, 0.95, 0.97]);
+      const pNeg = (1 - sens) * pD + spec * (1 - pD), post = (1 - sens) * pD / pNeg;
+      return { q: `Disease prior P(d) = ${pD}. Symptom test: P(s | d) = ${sens}, P(¬s | ¬d) = ${spec}. A patient shows <b>no symptom</b> (¬s). Find P(¬s) and P(d | ¬s) (4 d.p.).`,
+        labels: ["P(¬s)", "P(d | ¬s)"], answers: [N(rd(pNeg), 0.0006), N(rd(post), 0.0006)],
+        steps: `Causal values are given, we want the diagnostic one.<br>P(¬s | d) = 1 - ${sens} = ${rd(1 - sens, 3)}<br>P(¬s) = P(¬s | d)P(d) + P(¬s | ¬d)P(¬d) = ${rd(1 - sens, 3)}×${pD} + ${spec}×${rd(1 - pD, 3)} = <b>${rd(pNeg)}</b><br>P(d | ¬s) = ${rd((1 - sens) * pD, 5)} / ${rd(pNeg)} = <b>${rd(post)}</b>` };
+  }},
   { id: "logic", topic: "l10", name: "Evaluate a logic sentence", make(r) {
       const P = r() < 0.5, Q = r() < 0.5, R = r() < 0.5; const imp = (a, b) => !a || b;
       const forms = [
