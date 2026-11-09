@@ -4,7 +4,7 @@
 // data-x="k" hides it again at sentence k. data-on="k:cls k2:cls2" swaps a class on at sentence k.
 (function () {
   window.VIDEO_LESSONS = window.VIDEO_LESSONS || {};
-  window.VIDEO_READY = ["l2", "l3", "l4", "l5", "l6", "l7", "l8", "l9"]; // lessons that have a video file in js/videos/
+  window.VIDEO_READY = ["l2", "l3", "l4", "l5", "l6", "l7", "l8", "l9", "l10", "l11", "l12"]; // lessons that have a video file in js/videos/
   const WPS = 2.75; // words per second at rate 1, used for timing estimates and silent mode
   const ST_KEY = "aiexam_vid";
   let st = {}; try { st = JSON.parse(localStorage.getItem(ST_KEY) || "{}"); } catch (e) { st = {}; }
