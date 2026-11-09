@@ -1,5 +1,11 @@
 (function () {
-  const { title, h, list, fx, card, big, flow, cols, split, tbl, svg, graph, at } = VK;
+  const { title, h, list, fx, card, big, flow, cols, split, tbl, svg, graph, at, stg, act, fix, say, person, plate, tag, zone, inSvg, car, crow, bar, J } = VK;
+  // small tree used for the BFS ripples and the DFS maze walk
+  const TN = { A: [210, 30, "A"], B: [110, 100, "B"], C: [210, 100, "C"], D: [310, 100, "D"], E: [65, 170, "E"], F: [155, 170, "F"], G: [210, 170, "G"], H: [275, 170, "H"], I: [350, 170, "I"] };
+  const TE = [["A", "B"], ["A", "C"], ["A", "D"], ["B", "E"], ["B", "F"], ["C", "G"], ["D", "H"], ["D", "I"]];
+  const tree = (lvlK, on = {}, eon = {}) => graph(420, 200, Object.fromEntries(Object.entries(TN).map(([id, [x, y, l]]) => [id, [x, y, l, lvlK[y] || 0]])), TE.map(([a, b]) => [a, b, "", lvlK[TN[b][1]] || 0]), on, eon);
+  // A* bar row: blue = g, orange = h, total = f
+  const brow = (k, x, name, g, hh, kWin) => `<div class="vk-i brow" data-s="${k}" ${x != null ? `data-x="${x}"` : ""} ${kWin != null ? `data-on="${kWin}:win"` : ""}><em>${name}</em><div class="trk">${bar({ [k]: g / 7.2 }, "g", "g " + g)}${bar({ [k]: hh / 7.2 }, "h", "h " + hh)}</div><i>${g + hh}</i></div>`;
   // Romania mini map
   const C = { Ar: [50, 112, "Ar", 0, "", "Arad"], Ze: [85, 52, "Ze", 0, "", "Zerind"], Or: [150, 26, "Or", 0, "", "Oradea"], Si: [205, 122, "Si", 0, "", "Sibiu"], Ti: [52, 202, "Ti", 0, "", "Timisoara"], Lu: [140, 227, "Lu", 0, "", "Lugoj"], Me: [150, 280, "Me", 0, "", "Mehadia"], Dr: [85, 312, "Dr", 0, "", "Drobeta"], Cr: [260, 310, "Cr", 0, "", "Craiova"], Ri: [235, 202, "RV", 0, "", "Rimnicu V."], Fa: [335, 122, "Fa", 0, "", "Fagaras"], Pi: [345, 232, "Pi", 0, "", "Pitesti"], Bu: [480, 274, "Bu", 0, "", "Bucharest"], Ur: [580, 217, "Ur", 0, "", "Urziceni"] };
   const E = [["Ar", "Ze", 75], ["Ar", "Si", 140], ["Ar", "Ti", 118], ["Ze", "Or", 71], ["Or", "Si", 151], ["Ti", "Lu", 111], ["Lu", "Me", 70], ["Me", "Dr", 75], ["Dr", "Cr", 120], ["Cr", "Ri", 146], ["Cr", "Pi", 138], ["Si", "Ri", 80], ["Si", "Fa", 99], ["Ri", "Pi", 97], ["Fa", "Bu", 211], ["Pi", "Bu", 101], ["Bu", "Ur", 85]];
@@ -22,11 +28,11 @@
             "or a series of moves in a puzzle.",
             "Our running example: an agent on holiday in Romania. It's in Arad and wants to get to Bucharest, and it has a road map with the distance of every road.",
             "Each circle is a city, which is a state, and each line is a road, which is an action, labelled with its distance."] },
-        { v: h("A solution vs the <b>optimal</b> solution") + split(ro({}, { "Ar-Si": "1:hot 3:path", "Si-Fa": "1:hot 3:", "Fa-Bu": "1:hot 3:", "Si-Ri": "3:path", "Ri-Pi": "3:path", "Pi-Bu": "3:path" }), q(1, null, "Arad → Sibiu → Fagaras → Bucharest: <b>3 roads, cost 450</b>") + q(3, null, "Arad → Sibiu → Rimnicu V. → Pitesti → Bucharest: <b>4 roads, cost 418</b>") + card(4, "warn", "Fewest steps is <b>not</b> the same as lowest cost.")),
+        { v: h("A solution vs the <b>optimal</b> solution") + split(inSvg(ro({}, { "Ar-Si": "1:hot 3:path", "Si-Fa": "1:hot 3:", "Fa-Bu": "1:hot 3:", "Si-Ri": "3:path", "Ri-Pi": "3:path", "Pi-Bu": "3:path" }), car({ 1: [[50, 112], [205, 122], [335, 122], [480, 274]], 3: [[50, 112], [205, 122], [235, 202], [345, 232], [480, 274]] })), q(1, null, "Arad → Sibiu → Fagaras → Bucharest: <b>3 roads, cost 450</b>") + q(3, null, "Arad → Sibiu → Rimnicu V. → Pitesti → Bucharest: <b>4 roads, cost 418</b>") + card(4, "warn", "Fewest steps is <b>not</b> the same as lowest cost.")),
           n: ["A solution is any sequence of actions from the start state to a goal state.",
-            "Here is one: Arad, Sibiu, Fagaras, Bucharest. Only three roads, with a total cost of 450.",
+            "Here is one. Watch the car: Arad, Sibiu, Fagaras, Bucharest. Only three roads, with a total cost of 450.",
             "The optimal solution is the one with the lowest total path cost.",
-            "That's this one: through Sibiu, Rimnicu Vilcea and Pitesti, with four roads but a cost of only 418.",
+            "That's this one: through Sibiu, Rimnicu Vilcea and Pitesti. Four roads, more turns, but a cost of only 418.",
             "Remember this difference between fewest steps and lowest cost. It decides which algorithms are optimal later on."] }
       ] },
       { t: "Defining a search problem", sec: [], scenes: [
@@ -68,20 +74,69 @@
             "Repeat until the current node is a goal, which is success, or the frontier is empty, which is failure.",
             "The algorithms split into two families. Uninformed, or blind, search uses only the problem definition.",
             "Informed search also uses extra knowledge, in the form of a heuristic."] },
-        { v: h("<b>Tree search</b> vs <b>graph search</b>") + tbl(["", "Tree search", "Graph search"], [[0, "Remembers visited states?", "No", "Yes, in the <b>explored set</b> (closed list)"], [1, "Repeated states", "Generated again and again", "Discarded if already in frontier or explored set"], [2, "Risk / cost", "Redundant paths, infinite loops (Arad, Sibiu, Arad...)", "More memory for the explored set"]]) + card(3, "", "Graph search adds 3 lines: <b>initialise explored set</b>, <b>add node to explored</b>, <b>only add children not in frontier or explored</b>. Delete them and you have tree search.") + card(4, "tip", "Nice property: the frontier always <b>separates</b> explored from unexplored states."),
-          n: ["Both versions follow the general idea. The difference is whether the algorithm remembers where it's been. Tree search does not. Graph search keeps an explored set, also called the closed list.",
-            "So in tree search, repeated states can be generated again and again. Graph search discards a new node if its state is already in the frontier or the explored set.",
-            "The risk for tree search is redundant paths and infinite loops, like Arad, Sibiu, Arad, Sibiu, forever. The cost of graph search is extra memory for the explored set.",
-            "In pseudocode, graph search adds exactly three lines: initialise the explored set, add each expanded node to it, and only add children that are not already in the frontier or explored set.",
-            "A nice property of graph search: the frontier always separates explored states from unexplored ones, so any path to an unexplored state must pass through the frontier."] }
+        { v: h("<b>Tree search</b> vs <b>graph search</b>") + stg(0, [
+            fix(tag("Tree search: no memory", "lbl"), 22, 8), fix(tag("Graph search: keeps an explored set", "lbl"), 72, 8),
+            fix(tag("Arad"), 8, 42), fix(tag("Sibiu"), 36, 42),
+            `<div class="a wk" data-run='${J({ 0: [[8, 42], [36, 42], [8, 42], [36, 42], [8, 42], [36, 42], [8, 42]] })}'></div>`,
+            fix(tag("Arad → Sibiu → Arad → … forever", "bad"), 24, 78),
+            fix(tag("Arad"), 60, 32, 1), fix(tag("Sibiu"), 84, 32, 1),
+            fix(zone("explored set (closed list)", 30, 7), 72, 74, 1),
+            act(tag("Arad", "hi"), { 0: [60, 32, 0], 1: [62, 74, 1] }), act(tag("Sibiu", "hi"), { 0: [84, 32, 0], 2: [80, 74, 1] }),
+            act(say({ 3: '<div class="tg ghost">child: Arad?</div>', 4: '<div class="tg bad">Arad: already explored → discard</div>' }), { 0: [84, 50, 0], 3: [86, 52, 1], 5: [86, 52, 0] })
+          ], "16/4.6", "tall") + card(5, "", "Graph search = tree search + 3 lines: <b>explored set</b>, <b>add each expanded node</b>, <b>skip repeats</b>. The frontier <b>separates</b> explored from unexplored."),
+          n: ["The two versions differ in one thing: memory. Tree search doesn't remember where it's been. Watch it bounce: Arad, Sibiu, back to Arad, back to Sibiu. With two-way roads it can loop forever, and it keeps re-exploring redundant paths.",
+            "Graph search keeps an explored set, also called the closed list. When Arad is expanded, it goes into the set.",
+            "When Sibiu is expanded, it goes into the set too.",
+            "Now Sibiu generates its neighbour, Arad, as a child.",
+            "Arad is already in the explored set, so graph search throws it away. No loop, no wasted work. A child is also dropped if its state is already waiting in the frontier.",
+            "The price is memory for the explored set. In pseudocode, graph search is tree search plus exactly three lines: create the explored set, add each expanded node to it, and only add children that aren't already in the frontier or explored set. A nice property: the frontier always separates explored states from unexplored ones."] }
       ] },
       { t: "Queues and how we measure algorithms", sec: [4], scenes: [
-        { v: h("The <b>queue type</b> decides the algorithm") + tbl(["Queue", "Pops", "Algorithm"], [[1, "<b>FIFO</b> (first in, first out)", "Oldest = shallowest node", "BFS"], [2, "<b>LIFO / stack</b> (last in, first out)", "Newest = deepest node", "DFS"], [3, "<b>Priority queue</b>", "Lowest f(n)", "UCS, Greedy, A*"]]) + card(0, "", "Operations: <b>EMPTY</b>(queue), <b>POP</b>(queue), <b>INSERT</b>(element, queue)") + card(4, "ana", "FIFO = a line at a coffee shop. LIFO = a stack of plates. Priority queue = hospital triage."),
-          n: ["The frontier is stored in a queue with three operations: empty, pop, and insert. And the type of queue decides which node is popped next, so it decides the algorithm.",
-            "A FIFO queue, first in first out: new elements join at the back, and the oldest leaves from the front. That's breadth first search.",
-            "A LIFO queue, or stack, last in first out: the newest element is popped first. That's depth first search.",
-            "A priority queue: each element has a priority from a function f, and the one with the lowest f is popped first. That's UCS, greedy and A star.",
-            "Think of FIFO as a line at a coffee shop, LIFO as a stack of plates, and a priority queue as hospital triage, where the most urgent goes first."] },
+        { v: h("FIFO queue = a coffee shop line → <b>BFS</b>") + stg(0, [
+            fix(zone("front: POP = expand", 9, 9), 8, 52), fix(tag("new arrivals join at the back ←", "lbl"), 76, 12),
+            fix(say({ 0: "", 2: "Expanding: <b>Sibiu</b>", 4: "Expanding: <b>Timisoara</b>" }, "tg hi"), 14, 12, 2),
+            act(person("Sibiu", 0), { 0: [104, 56, 0], 1: [24, 56, 1], 2: [8, 52, 1], 4: [-8, 52, 0] }),
+            act(person("Timisoara", 1), { 0: [104, 56, 0], 1: [36, 56, 1], 2: [24, 56, 1], 4: [8, 52, 1] }),
+            act(person("Zerind", 2), { 0: [104, 56, 0], 1: [48, 56, 1], 2: [36, 56, 1], 4: [24, 56, 1] }),
+            act(person("Fagaras", 3), { 0: [104, 56, 0], 3: [48, 56, 1], 4: [36, 56, 1] }),
+            act(person("Oradea", 4), { 0: [104, 56, 0], 3: [60, 56, 1], 4: [48, 56, 1] }),
+            act(person("Rimnicu", 5), { 0: [104, 56, 0], 3: [72, 56, 1], 4: [60, 56, 1] })
+          ], "16/5", "q") + card(5, "tip", "First in, first out → <b>oldest first</b> → shallowest first → <b>breadth first search</b>."),
+          n: ["The frontier is stored in a queue, and the type of queue decides which node comes out next. So the queue is what turns the general idea into a specific algorithm. Let's see each one in action. A FIFO queue, first in first out, works like the line at a coffee shop. You join at the back, and whoever is at the front is served next.",
+            "Say we've just expanded Arad. Its children, Sibiu, Timisoara and Zerind, join the line in alphabetical order.",
+            "Pop from the front. Sibiu was first in, so Sibiu is first out and gets expanded. Everyone else shuffles forward.",
+            "Sibiu's children, Fagaras, Oradea and Rimnicu Vilcea, join at the back, behind Zerind. They have to wait their turn.",
+            "Next out is Timisoara, the oldest node in the line, not one of Sibiu's new children.",
+            "Oldest first means shallowest first, so the search spreads out level by level. That's breadth first search."] },
+        { v: h("LIFO stack = a pile of plates → <b>DFS</b>") + stg(0, [
+            fix(zone("the stack", 18, 21, "top"), 30, 60), fix(tag("push and pop at the TOP only", "lbl"), 30, 7), fix(tag("Expanding", "lbl"), 72, 30, 2),
+            act(plate("Zerind", 2), { 0: [30, -12, 0], 1: [30, 84, 1] }, "", 'style="transition-delay:0s"'),
+            act(plate("Timisoara", 1), { 0: [30, -12, 0], 1: [30, 73, 1] }, "", 'style="transition-delay:calc(.35s / var(--vkr,1))"'),
+            act(plate("Sibiu", 0), { 0: [30, -12, 0], 1: [30, 62, 1], 2: [72, 48, 1], 4: [110, 48, 0] }, "", 'style="transition-delay:calc(.7s / var(--vkr,1))"'),
+            act(plate("Rimnicu V.", 5), { 0: [30, -12, 0], 3: [30, 62, 1] }, "", 'style="transition-delay:0s"'),
+            act(plate("Oradea", 4), { 0: [30, -12, 0], 3: [30, 51, 1] }, "", 'style="transition-delay:calc(.35s / var(--vkr,1))"'),
+            act(plate("Fagaras", 3), { 0: [30, -12, 0], 3: [30, 40, 1], 4: [72, 48, 1] }, "", 'style="transition-delay:calc(.7s / var(--vkr,1))"')
+          ], "16/5.2", "stk") + card(5, "tip", "Last in, first out → <b>newest first</b> → deepest first → <b>depth first search</b>."),
+          n: ["A LIFO queue, last in first out, is a stack. Think of a pile of plates. You can only put a plate on top, and you can only take the top plate.",
+            "After expanding Arad, depth first search pushes the children in reverse alphabetical order: Zerind, then Timisoara, then Sibiu. So Sibiu ends up on top.",
+            "Pop the top plate. Sibiu is expanded.",
+            "Its children go on top of the pile: Rimnicu Vilcea, Oradea, then Fagaras.",
+            "Pop again and you get Fagaras, the newest node. Timisoara has been waiting near the bottom since the start.",
+            "Newest first means deepest first, so the search dives down one branch before trying any other. That's depth first search."] },
+        { v: h("Priority queue = hospital triage → <b>UCS, Greedy, A*</b>") + stg(0, [
+            fix(zone("treated next (POP)", 9, 9), 8, 52), fix(tag("lowest score goes first", "lbl"), 30, 12),
+            act(person("Sibiu", 0, 140), { 0: [104, 56, 0], 1: [24, 56, 1], 2: [48, 56, 1], 3: [36, 56, 1], 4: [24, 56, 1] }),
+            act(person("Timisoara", 1, 118), { 0: [104, 56, 0], 1: [36, 56, 1], 2: [36, 56, 1], 3: [24, 56, 1], 4: [8, 52, 1] }),
+            act(person("Zerind", 2, 75), { 0: [104, 56, 0], 1: [48, 56, 1], 2: [24, 56, 1], 3: [8, 52, 1], 4: [-8, 52, 0] }),
+            act(person("Oradea", 4, 146), { 0: [104, 56, 0], 3: [48, 56, 1], 4: [36, 56, 1] }),
+            act(person("Lugoj", 6, 229), { 0: [104, 56, 0], 4: [48, 56, 1] })
+          ], "16/5", "q") + card(5, "tip", "Same queue, different score: <b>UCS</b> f = g, &nbsp; <b>Greedy</b> f = h, &nbsp; <b>A*</b> f = g + h."),
+          n: ["A priority queue is like a hospital emergency department. Patients aren't seen in the order they arrive. Whoever is most urgent goes first. In search, most urgent means the lowest score, f of n.",
+            "Here's uniform cost search, where the score is the path cost so far. Expanding Arad brings in Sibiu at 140, Timisoara at 118, and Zerind at 75.",
+            "The queue sorts them by score. Zerind, at 75, jumps to the front, even though it arrived last.",
+            "Pop Zerind. Its child Oradea arrives with a cost of 75 plus 71, which is 146, so it waits behind Sibiu.",
+            "Pop Timisoara at 118. Lugoj arrives at 118 plus 111, which is 229, and goes to the back.",
+            "That one queue drives three algorithms. Score by g and you get uniform cost search, score by h and you get greedy, and score by g plus h and you get A star. The queue's three operations are empty, pop, and insert."] },
         { v: h("Four ways to measure a search algorithm") + tbl(["Measure", "Question", "Analogy"], [[0, "<b>Completeness</b>", "If a solution exists, is it guaranteed to find one?", "Will I reach the destination?"], [1, "<b>Cost optimality</b>", "Does it return the lowest-cost solution?", "Will I find the cheapest route?"], [2, "<b>Time complexity</b>", "How much computation?", "How much searching?"], [3, "<b>Space complexity</b>", "How much memory?", "How much must I remember?"]]) + cols(list([[4, "<b>b</b> = branching factor (max children)"], [5, "<b>d</b> = depth of shallowest solution"], [6, "<b>m</b> = maximum depth of the tree"], [7, "<b>C*</b> = optimal cost, <b>ε</b> = smallest step cost"]], "tight"), card(8, "tip", "You only need to <b>use</b> these measures, not derive them.")),
           n: ["We judge every algorithm on four measures. Completeness: if a solution exists, is it guaranteed to find one?",
             "Cost optimality: does it return the lowest cost solution?",
@@ -94,10 +149,12 @@
             "The good news: the subject says you only need to use these measures, not derive them."] }
       ] },
       { t: "Breadth first search (BFS)", sec: [3], scenes: [
-        { v: h("BFS: explore <b>level by level</b>") + cols(list([[0, "Expand the root, then all its children, then theirs..."], [1, "Frontier: <b>FIFO queue</b>, children added alphabetically"], [2, "Goal test <b>when a child is generated</b> (early test)"]]), svg("frontier", 0)),
-          n: ["Breadth first search explores the tree level by level. It expands the root, then all of the root's children, then all of their children, and never goes deeper until the current level is finished.",
-            "The frontier is a FIFO queue. Children are added in alphabetical order, and the oldest node is always expanded next.",
-            "BFS does its goal test when a child is generated, an early goal test. That's safe for BFS, because a shallower solution would already have been found."] },
+        { v: h("BFS: explore <b>level by level</b>, like ripples") + split(list([[0, "Expand the root, then all its children, then theirs..."], [2, "Never goes deeper until the current level is <b>finished</b>"], [3, "Frontier: <b>FIFO queue</b> (the coffee shop line), children added alphabetically"], [4, "Goal test <b>when a child is generated</b> (early test)"]]), inSvg(tree({ 30: 0, 100: 1, 170: 2 }, { A: "0:fr 1:ex", B: "1:fr 2:ex", C: "1:fr 2:ex", D: "1:fr 2:ex", E: "2:fr", F: "2:fr", G: "2:fr 4:ok", H: "2:fr", I: "2:fr" }), '<rect class="band vk-i" data-s="0" x="2" y="8" width="416" height="44" rx="14"/><rect class="band vk-i" data-s="1" x="2" y="78" width="416" height="44" rx="14"/><rect class="band vk-i" data-s="2" x="2" y="148" width="416" height="44" rx="14"/>', true)),
+          n: ["Breadth first search explores level by level, like ripples spreading out from a stone dropped in a pond. First, the root.",
+            "Then every node one step away. The root is expanded, shown in blue, and its children wait in the frontier, shown in orange.",
+            "Then every node two steps away. BFS never goes deeper until the whole current level is finished.",
+            "The frontier is a FIFO queue, with children added in alphabetical order. That's the coffee shop line from before: the oldest node, which is always the shallowest, goes next.",
+            "BFS does its goal test when a child is generated, an early goal test. If G is the goal, BFS stops as soon as G is created. That's safe for BFS, because any shallower solution would already have been found."] },
         { v: h("BFS trace: Arad to Bucharest") + split(ro({ Ar: "1:ex", Si: "1:fr 2:ex 6:path", Ti: "1:fr 3:ex", Ze: "1:fr 4:ex", Fa: "2:fr 5:ex 6:path", Or: "2:fr", Ri: "2:fr", Lu: "3:fr", Bu: "5:ok 6:path" }, { "Ar-Si": "6:path", "Si-Fa": "6:path", "Fa-Bu": "6:path" }), q(1, 2, "Queue: Sibiu, Timisoara, Zerind") + q(2, 3, "Queue: Timisoara, Zerind, Fagaras, Oradea, Rimnicu") + q(3, 4, "Queue: Zerind, Fagaras, Oradea, Rimnicu, Lugoj") + q(4, 5, "Queue: Fagaras, Oradea, Rimnicu, Lugoj") + q(5, null, "Bucharest generated: <b>goal found</b>. Cost 450, 5 expansions.")),
           n: ["Let's run it. Orange means in the frontier, blue means expanded.",
             "Expand Arad. Sibiu, Timisoara and Zerind join the back of the queue.",
@@ -113,7 +170,13 @@
             "Exam trap: shallowest is not the same as cheapest."] }
       ] },
       { t: "Depth first search (DFS)", sec: [], scenes: [
-        { v: h("DFS: always expand the <b>deepest</b> node") + list([[0, "Go down one branch as far as possible, then <b>back up</b> to the next deepest unexpanded node"], [1, "Frontier: <b>LIFO stack</b>. Push children in <b>reverse</b> alphabetical order so the first child is on top"]]) + split(ro({ Ar: "2:ex", Si: "2:fr 3:ex 4:path", Ti: "2:fr", Ze: "2:fr", Fa: "3:fr 4:path", Or: "3:fr", Ri: "3:fr", Bu: "4:path" }, { "Ar-Si": "4:path", "Si-Fa": "4:path", "Fa-Bu": "4:path" }), q(2, 3, "Stack (top first): Sibiu, Timisoara, Zerind") + q(3, 4, "Stack: Fagaras, Oradea, Rimnicu, Timisoara, Zerind") + q(4, null, "Bucharest generated: goal. Cost 450, only 3 expansions (lucky!)")),
+        { v: h("DFS: explore a maze, <b>dead end, back up</b>") + split(list([[0, "Rule: keep going forward until a <b>dead end</b>, then <b>back up</b> to the last junction"], [1, "Root → first child"], [2, "→ its first child → dead end"], [3, "Back up to B, try F → dead end"], [4, "Back up to the root, try C. Frontier = <b>LIFO stack</b> (the pile of plates)"]]), inSvg(tree({}, { A: "0:cur 1:ex", B: "1:cur 2:ex", E: "2:bad", F: "3:bad", C: "4:cur" }, { "A-B": "1:path", "B-E": "2:path 3:", "B-F": "3:path 4:", "A-C": "4:path" }), `<circle class="mover dot hot" r="8" data-run='${J({ 0: [[210, 30]], 1: [[210, 30], [110, 100]], 2: [[110, 100], [65, 170]], 3: [[65, 170], [110, 100], [155, 170]], 4: [[155, 170], [110, 100], [210, 30], [210, 100]] })}' style="opacity:0"/>`)),
+          n: ["Depth first search is like exploring a maze with one simple rule: keep going forward until you hit a dead end, then back up to the last junction and take the next path.",
+            "From the root, it dives straight to the first child, B.",
+            "Then B's first child, E, as deep as it can go. Dead end.",
+            "So it backs up to the last junction, B, and tries the next branch, F. Another dead end.",
+            "Only when B's whole branch is finished does it back up to the root and try C. The frontier is a LIFO stack, the pile of plates, so the newest, deepest node always comes next."] },
+        { v: h("DFS trace: always expand the <b>deepest</b> node") + list([[0, "Dive down one branch, <b>back up</b> at dead ends"], [1, "<b>LIFO stack</b>: push children in <b>reverse</b> order, first child on top"]], "tight") + split(ro({ Ar: "2:ex", Si: "2:fr 3:ex 4:path", Ti: "2:fr", Ze: "2:fr", Fa: "3:fr 4:path", Or: "3:fr", Ri: "3:fr", Bu: "4:path" }, { "Ar-Si": "4:path", "Si-Fa": "4:path", "Fa-Bu": "4:path" }), q(2, 3, "Stack (top first): Sibiu, Timisoara, Zerind") + q(3, 4, "Stack: Fagaras, Oradea, Rimnicu, Timisoara, Zerind") + q(4, null, "Bucharest generated: goal. Cost 450, only 3 expansions (lucky!)")),
           n: ["Depth first search always expands the deepest node in the frontier. It dives down one branch as far as it can, then backs up to the next deepest unexpanded node and tries again.",
             "The frontier is a LIFO stack. Children are pushed in reverse alphabetical order, so the alphabetically first child ends up on top and is expanded first.",
             "From Arad, push Zerind, Timisoara, then Sibiu, so Sibiu is on top.",
@@ -133,11 +196,11 @@
             "g of n is the actual path cost from the start to n. We know it exactly. It looks backwards: how far have I come?",
             "h of n is the heuristic, an estimate of the cheapest cost from n to a goal. It depends only on the state, must be non-negative, and must be zero at a goal. It looks forwards.",
             "Nice link: BFS and DFS fit this pattern too. BFS is best-first with f equal to depth, and DFS uses negative depth, so the deepest node has the lowest score."] },
-        { v: h("Uniform cost search: f(n) = <b>g(n)</b>") + list([[0, "Expands the <b>cheapest path so far</b>: spreads out like ripples on a pond"], [1, "Goal test when a node is <b>POPPED</b>, not when generated"], [2, "If a cheaper path to a frontier state appears, <b>replace</b> the old entry"]]) + card(3, "ana", "<b>Dijkstra's algorithm</b> finds the shortest path from one start to <b>every</b> node (non-negative weights). UCS is the special case that <b>stops at one goal</b>."),
-          n: ["Uniform cost search uses f equals g. It always expands the frontier node with the cheapest path from the start, so it explores outwards in order of increasing cost, like ripples on a pond.",
+        { v: h("Uniform cost search: f(n) = <b>g(n)</b>") + split(inSvg(ro({ Ar: "0:cur" }), '<circle class="ucsr vk-i" data-s="0" cx="50" cy="112" r="85"/><circle class="ucsr vk-i" data-s="1" cx="50" cy="112" r="170"/><circle class="ucsr vk-i" data-s="2" cx="50" cy="112" r="255"/><circle class="ucsr vk-i" data-s="3" cx="50" cy="112" r="340"/>', true), list([[0, "Expands the <b>cheapest path so far</b>: spreads out like ripples, ordered by <b>cost</b>, not by steps"], [1, "Goal test when a node is <b>POPPED</b>, not when generated"], [2, "If a cheaper path to a frontier state appears, <b>replace</b> the old entry"]]) + card(3, "ana", "<b>Dijkstra</b>: shortest paths from one start to <b>every</b> node. UCS = Dijkstra that <b>stops at one goal</b>.")),
+          n: ["Uniform cost search uses f equals g. It always expands the frontier node with the cheapest path from the start, so it explores outwards in rings of increasing cost, like ripples on a pond. BFS ripples by number of steps. UCS ripples by distance travelled.",
             "The goal test happens when a node is popped for expansion, not when it's generated. This is essential, because a cheaper route to the goal might still be waiting in the frontier.",
             "And if a child's state is already in the frontier but the new path is cheaper, the old entry is replaced.",
-            "UCS is linked to Dijkstra's algorithm, which finds the shortest path from one start node to every other node. UCS is the special case that stops as soon as it reaches one goal."] },
+            "Notice the rings spread in every direction, including away from Bucharest. UCS has no sense of direction. It's linked to Dijkstra's algorithm, which finds the shortest path from one start node to every other node. UCS is the special case that stops as soon as it reaches one goal."] },
         { v: h("UCS trace (frontier sorted by g)") + split(ro({ Ar: "1:ex", Ze: "1:fr 2:ex", Ti: "1:fr 2:ex", Si: "1:fr 2:ex 8:path", Or: "2:fr 3:ex", Lu: "2:fr 3:ex", Ri: "2:fr 3:ex 8:path", Fa: "2:fr 3:ex", Pi: "3:fr 6:ex 8:path", Cr: "3:fr 7:ex", Me: "3:fr 6:ex", Dr: "6:fr 7:ex", Bu: "4:fr 8:path" }, { "Fa-Bu": "4:hot 6:", "Pi-Bu": "6:hot 8:path", "Ar-Si": "8:path", "Si-Ri": "8:path", "Ri-Pi": "8:path" }), q(1, 2, "Frontier: Zerind 75, Timisoara 118, Sibiu 140") + q(3, 4, "Expanded so far: Arad 0, Zerind 75, Timisoara 118, Sibiu 140, Oradea 146, Rimnicu 220, Lugoj 229, Fagaras 239") + q(4, 6, "Bucharest enters at <b>450</b> via Fagaras. Not popped yet!") + q(6, 7, "Pitesti (317) finds Bucharest at <b>418</b>: replace the 450 entry") + q(7, null, "Bucharest popped at <b>418</b>: goal. Optimal, but <b>12 expansions</b>.")),
           n: ["Let's trace UCS. The frontier is always sorted by g, the cost so far.",
             "Expand Arad. Zerind is 75, Timisoara 118, Sibiu 140.",
@@ -155,19 +218,19 @@
             "C star over epsilon is roughly the depth of the optimal solution, measured in the cheapest possible steps."] }
       ] },
       { t: "Greedy best first search", sec: [], scenes: [
-        { v: h("Greedy: f(n) = <b>h(n)</b>, only look forward") + cols(tbl(["City", "h<sub>SLD</sub>"], [[0, "Arad", "366"], [0, "Sibiu", "253"], [0, "Timisoara", "329"], [0, "Zerind", "374"], [0, "Fagaras", "176"], [0, "Rimnicu V.", "193"], [0, "Pitesti", "100"], [0, "Oradea", "380"], [0, "Bucharest", "0"]], "sm"), list([[0, "Heuristic: <b>straight-line distance</b> to Bucharest"], [1, "Cheap to compute, never larger than the road distance"], [2, "Expand Arad: Sibiu 253, Timisoara 329, Zerind 374 → expand <b>Sibiu</b>"], [3, "Then <b>Fagaras 176</b> beats Rimnicu 193 → then Bucharest 0"], [4, "Result: cost <b>450</b>, only 3 expansions. <b>Not optimal</b>."]])),
-          n: ["Greedy best first search looks only forwards. It expands the node that appears closest to the goal, using f equals h. For Romania, h is the straight-line distance to Bucharest.",
-            "It's cheap to compute from map coordinates, and it's never larger than the road distance.",
+        { v: h("Greedy: f(n) = <b>h(n)</b>, only look forward") + split(inSvg(inSvg(ro({ Ar: "2:ex", Si: "2:fr 3:ex", Ti: "2:fr", Ze: "2:fr", Fa: "3:fr 4:ex", Ri: "3:fr", Or: "3:fr", Bu: "4:ok" }, { "Ar-Si": "4:hot", "Si-Fa": "4:hot", "Fa-Bu": "4:hot" }), '<line class="crowline vk-i" data-s="0" x1="50" y1="112" x2="480" y2="274"/><text class="vk-i crowt" data-s="0" x="150" y="163" transform="rotate(20.6 150 163)">366 as the crow flies</text>', true), crow({ 0: [[50, 100], [480, 262]] })) + fx(1, "h: Arad 366, Sibiu 253, Timisoara 329, Zerind 374, Fagaras 176, Rimnicu V. 193, Pitesti 100, Oradea 380, Bucharest 0", "sm"), list([[0, "h = <b>straight-line distance</b> to Bucharest"], [1, "Cheap, never larger than the road distance"], [2, "From Arad: Sibiu <b>253</b>, Timisoara 329, Zerind 374 → <b>Sibiu</b>"], [3, "<b>Fagaras 176</b> beats Rimnicu 193 → Bucharest 0"], [4, "Cost <b>450</b>, only 3 expansions. <b>Not optimal</b>."]], "tight")),
+          n: ["Greedy best first search looks only forwards. It expands the node that appears closest to the goal, using f equals h. For Romania, h is the straight-line distance to Bucharest. Picture a crow flying straight from Arad to Bucharest, ignoring the roads. That's 366.",
+            "It's cheap to compute from map coordinates, and it's never larger than the real road distance, because roads can only bend away from the straight line.",
             "From Arad, the frontier is Sibiu 253, Timisoara 329 and Zerind 374. Lowest h is Sibiu, so expand Sibiu.",
             "Now Fagaras at 176 beats Rimnicu Vilcea at 193, so greedy jumps to Fagaras, and then Bucharest with h of zero.",
-            "Result: cost 450 after only three expansions. Very fast, but not optimal. Fagaras looked closer as the crow flies, so greedy missed the cheaper route through Rimnicu Vilcea."] },
+            "Result: cost 450 after only three expansions. Very fast, but not optimal. Fagaras looked closer as the crow flies, so greedy took the expensive road and missed the cheaper route through Rimnicu Vilcea. It's like a hiker who always walks straight at the summit, even when a longer path would be easier."] },
         { v: h("Greedy properties") + tbl(["", "Greedy best first"], [[0, "Cost optimal?", "<b>No</b>"], [1, "Complete?", "<b>Not always</b>. Tree version can loop between two cities that each look closest. Graph version is complete in finite spaces."], [2, "Time and space", "O(b<sup>m</sup>) worst case, usually much faster with a good heuristic"]]),
           n: ["So greedy is not cost optimal.",
             "It's not always complete either. The tree version can loop forever, bouncing between two cities that each look closest. The graph version is complete in finite spaces.",
             "Worst case time and space are order b to the m, but a good heuristic usually makes it much faster."] }
       ] },
       { t: "A* search", sec: [6], scenes: [
-        { v: h("A*: f(n) = <b>g(n) + h(n)</b>") + fx(0, "f(n) = cost so far + estimated cost to go", "c") + card(1, "", "Same as UCS (priority queue, goal test on pop, replace if cheaper), but sorted by g + h.") + split(ro({ Ar: "2:ex", Si: "2:fr 3:ex 7:path", Ti: "2:fr", Ze: "2:fr", Ri: "3:fr 4:ex 7:path", Fa: "3:fr 5:ex", Or: "3:fr", Pi: "4:fr 6:ex 7:path", Cr: "4:fr", Bu: "5:fr 7:path" }, { "Fa-Bu": "5:hot 6:", "Pi-Bu": "6:hot 7:path", "Ar-Si": "7:path", "Si-Ri": "7:path", "Ri-Pi": "7:path" }), tbl(["Expand", "f = g + h"], [[2, "Arad", "0 + 366 = 366"], [3, "Sibiu", "140 + 253 = <b>393</b>"], [4, "Rimnicu V.", "220 + 193 = <b>413</b>"], [5, "Fagaras", "239 + 176 = 415"], [6, "Pitesti", "317 + 100 = 417"], [7, "Bucharest", "418 + 0 = <b>418</b>"]], "sm")),
+        { v: h("A*: f(n) = <b>g(n) + h(n)</b>") + cols(fx(0, "f(n) = cost so far + estimate to go", "c"), card(1, "", "<b>UCS</b> sorted by g + h: same queue, goal test on pop, replace if cheaper.")) + split(ro({ Ar: "2:ex", Si: "2:fr 3:ex 7:path", Ti: "2:fr", Ze: "2:fr", Ri: "3:fr 4:ex 7:path", Fa: "3:fr 5:ex", Or: "3:fr", Pi: "4:fr 6:ex 7:path", Cr: "4:fr", Bu: "5:fr 7:path" }, { "Fa-Bu": "5:hot 6:", "Pi-Bu": "6:hot 7:path", "Ar-Si": "7:path", "Si-Ri": "7:path", "Ri-Pi": "7:path" }), tbl(["Expand", "f = g + h"], [[2, "Arad", "0 + 366 = 366"], [3, "Sibiu", "140 + 253 = <b>393</b>"], [4, "Rimnicu V.", "220 + 193 = <b>413</b>"], [5, "Fagaras", "239 + 176 = 415"], [6, "Pitesti", "317 + 100 = 417"], [7, "Bucharest", "418 + 0 = <b>418</b>"]], "sm")),
           n: ["A star combines both ideas: f equals g plus h. In words, f estimates the total cost of the cheapest solution through n: the cost already spent, plus the estimated cost still to go.",
             "A star is just UCS with g plus h in place of g. Same priority queue, same goal test on pop, same replace if cheaper rule.",
             "Expand Arad. Sibiu has f equal to 140 plus 253, which is 393. Timisoara is 447 and Zerind 449. Lowest is Sibiu.",
@@ -176,6 +239,14 @@
             "That puts Bucharest in the frontier at 450. But Pitesti at 417 is still cheaper, so A star keeps going.",
             "Expanding Pitesti finds Bucharest at 418, which replaces the 450 entry.",
             "Bucharest is popped at 418. Optimal, with only 5 expansions. UCS needed 12."] },
+        { v: h("Why A* picks Rimnicu, not Fagaras") + list([[0, "Each bar = one frontier city. <b style=\"color:var(--exp)\">Blue = g</b> (already driven), <b style=\"color:var(--fr)\">orange = h</b> (estimate to go). Length = <b>f</b>."]], "tight")
+            + brow(0, 2, "Sibiu", 140, 253, 1) + brow(0, 2, "Timisoara", 118, 329) + brow(0, 2, "Zerind", 75, 374)
+            + brow(2, null, "Rimnicu V.", 220, 193, 3) + brow(2, null, "Fagaras", 239, 176) + brow(2, null, "Timisoara", 118, 329) + brow(2, null, "Zerind", 75, 374) + brow(2, null, "Oradea", 291, 380)
+            + card(3, "ok", "Fagaras has the shorter <b>orange</b> bar (looks closer), which fooled greedy. A* adds the <b>blue</b> bar too: Rimnicu V. <b>413</b> beats Fagaras <b>415</b>."),
+          n: ["Here's A star's decision as a picture. Each bar is one frontier city. Blue is g, the distance already driven. Orange is h, the straight-line estimate still to go. The total length is f.",
+            "From Arad, Sibiu has the shortest total, 393, so it's expanded first, even though Zerind has the smallest blue bar.",
+            "After expanding Sibiu, the frontier changes. Look at Rimnicu Vilcea and Fagaras. Fagaras has the shorter orange bar. It looks closer to Bucharest, and that's exactly what fooled greedy.",
+            "But Fagaras's blue bar is longer, because getting there cost more. Add them up and Rimnicu Vilcea wins, 413 against 415. Balancing the cost so far against the estimate still to go is what keeps A star on the cheapest route."] },
         { v: h("A* properties") + list([[0, "<b>Complete</b> if b finite, step costs ≥ ε > 0, finitely many nodes with f ≤ C*"], [1, "<b>Cost optimal</b> if h is <b>admissible</b> (tree search) or <b>consistent</b> (graph search)"], [2, "Expands every node with f(n) < C*, maybe some with f(n) = C* (the <b>goal contour</b>)"], [3, "<b>Optimally efficient</b>: no other optimal algorithm with the same consistent h is guaranteed to expand fewer nodes"]]) + card(4, "warn", "Not a magic bullet: keeps lots of nodes in <b>memory</b>, and insisting on optimal can be too slow. In practice: variants that are good but slightly sub-optimal."),
           n: ["A star is complete if the branching factor is finite, every step cost is above some positive epsilon, and only finitely many nodes have f less than or equal to C star.",
             "It's cost optimal if the heuristic is admissible for tree search, or consistent for graph search. We'll define those next.",

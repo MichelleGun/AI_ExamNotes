@@ -4,7 +4,7 @@
 // data-x="k" hides it again at sentence k. data-on="k:cls k2:cls2" swaps a class on at sentence k.
 (function () {
   window.VIDEO_LESSONS = window.VIDEO_LESSONS || {};
-  window.VIDEO_READY = ["l2", "l3", "l4", "l5", "l6"]; // lessons that have a video file in js/videos/
+  window.VIDEO_READY = ["l2", "l3", "l4", "l5", "l6", "l7", "l8", "l9"]; // lessons that have a video file in js/videos/
   const WPS = 2.75; // words per second at rate 1, used for timing estimates and silent mode
   const ST_KEY = "aiexam_vid";
   let st = {}; try { st = JSON.parse(localStorage.getItem(ST_KEY) || "{}"); } catch (e) { st = {}; }
@@ -112,7 +112,7 @@
       </details></div>`;
     const R = slot.querySelector(".vk"), q = s => R.querySelector(s);
     const sceneEl = q(".vk-scene"), cap = q(".vk-cap"), fill = q(".vk-fill"), time = q(".vk-time"), chn = q(".vk-chn"), playB = q(".vk-play");
-    R.classList.toggle("nocc", !st.set.cc);
+    R.classList.toggle("nocc", !st.set.cc); R.style.setProperty("--vkr", +st.set.rate || 1);
 
     function fillVoices() {
       const sel = q(".vk-voice"); if (!hasTTS) { sel.innerHTML = "<option>No voice on this device</option>"; sel.disabled = true; return; }
@@ -128,6 +128,39 @@
         steps.forEach(([, c]) => c && c.split(",").forEach(cc => el.classList.remove(cc)));
         let best = null; steps.forEach(([a, c]) => { if (a <= k) best = c; }); if (best) best.split(",").forEach(cc => el.classList.add(cc));
       });
+      // data-p="k:x,y[,opacity[,scale[,rotate]]] ...": move an actor to a position at narration step k
+      sceneEl.querySelectorAll("[data-p]").forEach(el => {
+        let best = null; el.dataset.p.trim().split(/\s+/).forEach(p => { const i = p.indexOf(":"); if (+p.slice(0, i) <= k) best = p.slice(i + 1); });
+        if (best == null) return; const [x, y, o = 1, sc = 1, r = 0] = best.split(",").map(Number);
+        if (el instanceof SVGElement) el.style.transform = `translate(${x}px,${y}px) scale(${sc}) rotate(${r}deg)`;
+        else { el.style.left = x + "%"; el.style.top = y + "%"; el.style.setProperty("--s", sc); el.style.setProperty("--r", r + "deg"); }
+        el.style.opacity = o;
+      });
+      // data-t='{"k":"html"}': swap an element's content at step k
+      sceneEl.querySelectorAll("[data-t]").forEach(el => {
+        let T; try { T = JSON.parse(el.dataset.t); } catch (e) { return; }
+        let best = null; Object.keys(T).map(Number).sort((a, b) => a - b).forEach(a => { if (a <= k) best = T[a]; });
+        if (best != null && el.innerHTML !== best) el.innerHTML = best;
+      });
+      // data-st='{"k":"css"}': set inline style at step k (bar widths, colours)
+      sceneEl.querySelectorAll("[data-st]").forEach(el => {
+        let T; try { T = JSON.parse(el.dataset.st); } catch (e) { return; }
+        if (el.dataset.base == null) el.dataset.base = el.getAttribute("style") || "";
+        let best = ""; Object.keys(T).map(Number).sort((a, b) => a - b).forEach(a => { if (a <= k) best = T[a]; });
+        el.setAttribute("style", el.dataset.base + ";" + best);
+      });
+      // data-run='{"k":[[x,y],[x,y],...]}': travel along a path of points when step k starts
+      sceneEl.querySelectorAll("[data-run]").forEach(el => {
+        let T; try { T = JSON.parse(el.dataset.run); } catch (e) { return; }
+        let key = null; Object.keys(T).map(Number).sort((a, b) => a - b).forEach(a => { if (a <= k) key = a; });
+        if (key == null) { el.style.opacity = 0; el._run = null; return; }
+        el.style.opacity = 1; if (el._run === key) return; el._run = key;
+        const pts = T[key], svgEl = el instanceof SVGElement, rate = +st.set.rate || 1;
+        const fr = pts.map(([x, y]) => svgEl ? { transform: `translate(${x}px,${y}px)` } : { left: x + "%", top: y + "%" });
+        el.getAnimations().forEach(a => a.cancel());
+        if (fr.length < 2 || !el.animate) { Object.assign(el.style, fr[fr.length - 1]); return; }
+        el.animate(fr, { duration: (pts.length - 1) * 900 / rate, fill: "forwards", easing: "ease-in-out" });
+      });
     }
     function render(i, animate = true) {
       const x = seq[i]; const ch = L.chapters[x.ci], sc = ch.scenes[x.si]; const key = x.ci + "." + x.si;
@@ -139,17 +172,49 @@
     }
     function remember(done) { st.pos[id] = { i: done ? 0 : idx, done: done || (st.pos[id] && st.pos[id].done) || false }; saveSt(); }
     function clear() { clearTimeout(timer); clearTimeout(watchdog); timer = watchdog = null; }
+    const sameScene = (a, b) => seq[a] && seq[b] && seq[a].ci === seq[b].ci && seq[a].si === seq[b].si;
+    const spoken = s => plain(s).replace(/→/g, " to ").replace(/×/g, " times ").replace(/≈/g, " approximately ").replace(/≤/g, " less than or equal to ").replace(/≥/g, " greater than or equal to ").replace(/¬/g, " not ");
+    const rateNow = () => +st.set.rate || 1;
+    let live = [], queued = new Set();
+    // move on after entry i: pause briefly at scene changes (shorter at higher speed)
+    function moveOn(i) {
+      if (!playing) return; clear();
+      if (i >= seq.length - 1) { finish(); return; }
+      idx = i + 1; remember();
+      timer = setTimeout(step, sameScene(i, i + 1) ? 60 : 600 / rateNow());
+    }
+    // a "group" = the sentences of one narration entry, spoken as ONE utterance (fewer starts = less lag)
+    const groupEnd = i => { let j = i; while (j + 1 < seq.length && seq[j + 1].ci === seq[i].ci && seq[j + 1].si === seq[i].si && seq[j + 1].k === seq[i].k) j++; return j; };
+    const show = j => { if (j > idx) { idx = j; render(j); remember(); } };
+    function arm(i, e, my) { clearTimeout(watchdog); let d = 0; for (let j = i; j <= e; j++) d += seq[j].d; watchdog = setTimeout(() => { if (my === token && playing && idx <= e) { try { speechSynthesis.cancel(); } catch (x) { } moveOn(e); } }, d / rateNow() * 2600 + 4000); }
+    // While one entry plays, the next entry of the same scene is already queued, so the voice runs straight on.
+    function queue(i, my, v) {
+      if (queued.has(i)) return; queued.add(i);
+      const e = groupEnd(i), offs = []; let text = "";
+      for (let j = i; j <= e; j++) { offs.push(text.length); text += (j > i ? " " : "") + spoken(seq[j].s); }
+      const u = new SpeechSynthesisUtterance(text);
+      u.voice = v; u.lang = v.lang; u.rate = rateNow();
+      let gotBoundary = false, fall = [];
+      u.onboundary = ev => { if (my !== token) return; gotBoundary = true; fall.forEach(clearTimeout); let j = 0; while (j + 1 < offs.length && offs[j + 1] - 1 <= ev.charIndex) j++; show(i + j); };
+      u.onstart = () => {
+        if (my !== token) return; if (idx < i) { idx = i; render(i); remember(); } arm(i, e, my);
+        // captions follow word boundaries; if the voice gives none, follow estimated sentence timings
+        let t = 0; for (let j = i; j < e; j++) { t += seq[j].d / rateNow() * 1000; const jj = j + 1; fall.push(setTimeout(() => { if (!gotBoundary && my === token) show(jj); }, t)); }
+        if (sameScene(e, e + 1)) queue(e + 1, my, v);
+      };
+      u.onend = () => { fall.forEach(clearTimeout); if (my !== token || !playing) return; show(e); if (sameScene(e, e + 1)) { if (!queued.has(e + 1)) queue(e + 1, my, v); return; } moveOn(e); };
+      u.onerror = ev => { fall.forEach(clearTimeout); if (my !== token || ev.error === "interrupted" || ev.error === "canceled") return; moveOn(e); };
+      live.push(u); speechSynthesis.speak(u);
+    }
     function step() {
       clear(); const my = ++token; render(idx);
-      const x = seq[idx]; const rate = +st.set.rate || 1; const dur = x.d / rate * 1000;
-      const advance = () => { if (my !== token || !playing) return; clear(); if (idx >= seq.length - 1) { finish(); return; } const sceneChange = seq[idx + 1].si !== x.si || seq[idx + 1].ci !== x.ci; idx++; remember(); timer = setTimeout(step, sceneChange ? 650 : 120); };
+      const x = seq[idx], rate = rateNow();
+      R.style.setProperty("--vkr", rate);
       const v = !st.set.muted && pickVoice(st.set.voice);
-      if (!v) { timer = setTimeout(advance, dur + 250); return; }
+      if (!v) { timer = setTimeout(() => { if (my === token) moveOn(idx); }, x.d / rate * 1000 + 150); return; }
       try { speechSynthesis.cancel(); } catch (e) { }
-      const u = new SpeechSynthesisUtterance(plain(x.s).replace(/→/g, " to ").replace(/×/g, " times ").replace(/≈/g, " approximately ").replace(/≤/g, " less than or equal to ").replace(/≥/g, " greater than or equal to ").replace(/¬/g, " not "));
-      u.voice = v; u.lang = v.lang; u.rate = rate; u.onend = advance; u.onerror = e => { if (e.error === "interrupted" || e.error === "canceled") return; timer = setTimeout(advance, dur); };
-      speechSynthesis.speak(u);
-      watchdog = setTimeout(advance, dur * 2.6 + 4000);
+      live = []; queued = new Set();
+      queue(idx, my, v); arm(idx, groupEnd(idx), my);
     }
     function play() { if (current && current !== api) current.pause(); current = api; R.classList.add("started"); playing = true; playB.innerHTML = ICON.pause; playB.setAttribute("aria-label", "Pause"); step(); }
     function pause() { playing = false; token++; clear(); if (hasTTS) try { speechSynthesis.cancel(); } catch (e) { } playB.innerHTML = ICON.play; playB.setAttribute("aria-label", "Play"); remember(); }
