@@ -258,13 +258,14 @@
 
   // Step-by-step explanation + learn-more links for a quiz question (data in js/explain.js)
   function explainHTML(q, sel) {
+    const dedup = (o, x) => { x = x || ""; const p = String(o).replace(/<[^>]+>/g, "") + ":"; return x.startsWith(p) ? x.slice(p.length).trim() : x; };
     const t = topicById(q.tp); if (!t) return q.e ? `<div class="expl">${esc(q.e)}</div>` : "";
     const qi = q.id ? +q.id.split("-")[1] : -1; const X = (window.QX && QX[q.tp] && QX[q.tp][qi]) || null;
     let h = "";
     if (X) {
       if (X.o && (q.t === "mcq" || q.t === "multi")) {
         const good = j => (q.t === "multi" ? q.a.includes(j) : q.a === j);
-        h += `<div class="why"><b>Why each option is right or wrong</b><ul>${q.o.map((o, j) => `<li class="${good(j) ? "y" : "n"} ${sel && sel.has(j) ? "mine" : ""}"><span class="tag">${good(j) ? "Correct" : "Wrong"}${sel && sel.has(j) ? " · your pick" : q.t === "multi" && good(j) ? " · you missed this" : ""}</span> <b>${esc(o)}</b>: ${X.o[j] || ""}</li>`).join("")}</ul></div>`;
+        h += `<div class="why"><b>Why each option is right or wrong</b><ul>${q.o.map((o, j) => `<li class="${good(j) ? "y" : "n"} ${sel && sel.has(j) ? "mine" : ""}"><span class="tag">${good(j) ? "Correct" : "Wrong"}${sel && sel.has(j) ? " · your pick" : q.t === "multi" && good(j) ? " · you missed this" : ""}</span> <b>${esc(o)}</b>: ${dedup(o, X.o[j])}</li>`).join("")}</ul></div>`;
       }
       if (X.o && q.t === "match") h += `<div class="why"><b>Why each pair matches</b><ul>${q.pairs.map((p, j) => `<li class="y"><b>${esc(p[0])} → ${esc(p[1])}</b>: ${X.o[j] || ""}</li>`).join("")}</ul></div>`;
       if (X.st && X.st.length) h += `<div class="why"><b>Step by step</b><ol>${X.st.map(x => `<li>${x}</li>`).join("")}</ol></div>`;

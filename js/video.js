@@ -4,7 +4,7 @@
 // data-x="k" hides it again at sentence k. data-on="k:cls k2:cls2" swaps a class on at sentence k.
 (function () {
   window.VIDEO_LESSONS = window.VIDEO_LESSONS || {};
-  window.VIDEO_READY = ["l2"]; // lessons that have a video file in js/videos/
+  window.VIDEO_READY = ["l2", "l3", "l4", "l5", "l6"]; // lessons that have a video file in js/videos/
   const WPS = 2.75; // words per second at rate 1, used for timing estimates and silent mode
   const ST_KEY = "aiexam_vid";
   let st = {}; try { st = JSON.parse(localStorage.getItem(ST_KEY) || "{}"); } catch (e) { st = {}; }
@@ -184,7 +184,7 @@
     if (!slot || !VIDEO_READY.includes(id)) return;
     if (VIDEO_LESSONS[id]) { mount(id, slot, startSec); return; }
     slot.innerHTML = `<div class="vk loading"><div class="vk-stage"><div class="vk-poster"><span class="vk-ptitle">Loading lesson...</span></div></div></div>`;
-    const s = document.createElement("script"); s.src = "js/videos/" + id + ".js";
+    const s = document.createElement("script"); s.src = "js/videos/" + id + ".js?v=" + (window.APP_V || "");
     s.onload = () => { if (VIDEO_LESSONS[id]) mount(id, slot, startSec); else slot.innerHTML = ""; };
     s.onerror = () => { slot.innerHTML = ""; };
     document.head.appendChild(s);
