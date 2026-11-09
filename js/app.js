@@ -147,14 +147,19 @@
 
   function topicsList() { home(); }
 
-  function topicPage(id) {
+  function topicPage(id, sec) {
     const t = topicById(id) || TOP[0]; const i = TOP.indexOf(t);
     main.innerHTML = `<div class="crumbs"><a href="#/">Home</a> / L${t.num}</div><h1>L${t.num}: ${t.title}</h1><p class="muted">${t.sub}</p>
+      <div class="vslot" id="vslot"></div>
       <div class="tabs"><a class="on">Notes</a><a href="#/cards/${t.id}">Flashcards (${(CARDS[t.id] || []).length})</a><a href="#/quiz/${t.id}">Quiz (${(QUESTIONS[t.id] || []).length})</a>${GENERATORS.some(g => g.topic === t.id) ? `<a href="#/practice/${GENERATORS.find(g => g.topic === t.id).id}">Calc practice</a>` : ""}</div>
       <div class="toc">${t.sections.map((s, k) => `<a href="javascript:void(0)" data-k="${k}">${s.h}</a>`).join("")}</div>
       ${t.sections.map((s, k) => { const sid = t.id + "-" + k; const sv = S.saved.sections.includes(sid); return `<section class="note" id="s${k}"><div class="nh"><h2>${s.h}</h2><button class="btn small ghost savesec ${sv ? "on" : ""}" data-id="${sid}">${sv ? "Saved" : "Save to my notes"}</button></div>${s.html}</section>`; }).join("")}
       <div class="pager">${i > 0 ? `<a class="btn ghost" href="#/topic/${TOP[i - 1].id}">← L${TOP[i - 1].num}</a>` : "<span></span>"}<a class="btn" href="#/quiz/${t.id}">Test yourself</a>${i < TOP.length - 1 ? `<a class="btn ghost" href="#/topic/${TOP[i + 1].id}">L${TOP[i + 1].num} →</a>` : "<span></span>"}</div>`;
     $$(".toc a").forEach(a => a.onclick = () => $("#s" + a.dataset.k).scrollIntoView({ behavior: "smooth" }));
+    const vsec = !sec ? null : sec[0] === "v" ? +sec.slice(1) : sec[0] === "c" ? sec : null;
+    if (window.mountVideo) mountVideo(t.id, $("#vslot"), vsec);
+    if (vsec != null) setTimeout(() => { const v = $("#vslot"); if (v) v.scrollIntoView({ behavior: "smooth", block: "start" }); }, 150);
+    else if (sec != null && $("#s" + sec)) setTimeout(() => $("#s" + sec).scrollIntoView({ behavior: "smooth", block: "start" }), 150);
     $$(".savesec").forEach(b => b.onclick = () => { const id = b.dataset.id; const k = S.saved.sections.indexOf(id); if (k >= 0) S.saved.sections.splice(k, 1); else S.saved.sections.push(id); b.classList.toggle("on"); b.textContent = k >= 0 ? "Save to my notes" : "Saved"; save(); toast(k >= 0 ? "Removed" : "Saved to My notes"); });
   }
 
@@ -244,11 +249,30 @@
         answered = true; if (ok) right++;
         const s = stat(q.tp); s.total++; if (ok) s.right++;
         award(ok ? (q.type === "gen" ? 3 : 2) : 0, q.type === "gen" ? "k" : null);
-        $(".fb", wrap).innerHTML = `<div class="${ok ? "okc" : "bad"}"><b>${ok ? "Correct!" : "Not quite."}</b></div>${fb ? `<div>${fb}</div>` : ""}${q.e ? `<div class="expl">${esc(q.e)}</div>` : ""}`;
+        $(".fb", wrap).innerHTML = `<div class="${ok ? "okc" : "bad"}"><b>${ok ? "Correct!" : "Not quite."}</b></div>${fb ? `<div>${fb}</div>` : ""}` + explainHTML(q, sel);
         $(".check", wrap).hidden = true; $(".nextq", wrap).hidden = false; $(".nextq", wrap).focus();
       }
     }
     show();
+  }
+
+  // Step-by-step explanation + learn-more links for a quiz question (data in js/explain.js)
+  function explainHTML(q, sel) {
+    const t = topicById(q.tp); if (!t) return q.e ? `<div class="expl">${esc(q.e)}</div>` : "";
+    const qi = q.id ? +q.id.split("-")[1] : -1; const X = (window.QX && QX[q.tp] && QX[q.tp][qi]) || null;
+    let h = "";
+    if (X) {
+      if (X.o && (q.t === "mcq" || q.t === "multi")) {
+        const good = j => (q.t === "multi" ? q.a.includes(j) : q.a === j);
+        h += `<div class="why"><b>Why each option is right or wrong</b><ul>${q.o.map((o, j) => `<li class="${good(j) ? "y" : "n"} ${sel && sel.has(j) ? "mine" : ""}"><span class="tag">${good(j) ? "Correct" : "Wrong"}${sel && sel.has(j) ? " · your pick" : q.t === "multi" && good(j) ? " · you missed this" : ""}</span> <b>${esc(o)}</b>: ${X.o[j] || ""}</li>`).join("")}</ul></div>`;
+      }
+      if (X.o && q.t === "match") h += `<div class="why"><b>Why each pair matches</b><ul>${q.pairs.map((p, j) => `<li class="y"><b>${esc(p[0])} → ${esc(p[1])}</b>: ${X.o[j] || ""}</li>`).join("")}</ul></div>`;
+      if (X.st && X.st.length) h += `<div class="why"><b>Step by step</b><ol>${X.st.map(x => `<li>${x}</li>`).join("")}</ol></div>`;
+      if (X.tip) h += `<div class="why tipq"><b>Exam tip:</b> ${X.tip}</div>`;
+    } else if (q.e) h += `<div class="expl">${esc(q.e)}</div>`;
+    const s = X && X.s != null ? X.s : null; const sh = s != null && t.sections[s] ? t.sections[s].h : null;
+    h += `<div class="learn"><b>Learn more:</b> <a href="#/topic/${t.id}${s != null ? "/" + s : ""}">L${t.num} notes${sh ? ": " + esc(sh) : ""}</a>${(window.VIDEO_READY || []).includes(t.id) ? ` · <a href="#/topic/${t.id}/${X && X.vc != null ? "c" + X.vc : "v" + (s != null ? s : 0)}">Watch this in the L${t.num} lesson video</a>` : ""} · <a href="#/cards/${t.id}">L${t.num} flashcards</a></div>`;
+    return h;
   }
 
   // ---------- Calculation practice ----------
