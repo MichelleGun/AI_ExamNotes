@@ -12,7 +12,30 @@
   const p1 = peaks[1];
   const hc = [p1 - 60, p1 - 40, p1 - 20, p1].map((x, i, a) => dot(x, i + 1, i < a.length - 1 ? i + 2 : null, i === a.length - 1 ? "stuck" : "")).join("");
   const board = (rows, k = 0, hi = []) => { let s = ""; for (let c = 0; c < 8; c++) for (let r = 0; r < 8; r++) s += `<rect x="${c * 24}" y="${(7 - r) * 24}" width="24" height="24" class="${(c + r) % 2 ? "sq1" : "sq0"}"/>`; rows.forEach((r, c) => { s += `<circle cx="${c * 24 + 12}" cy="${(8 - r) * 24 + 12}" r="8" class="qn ${hi.includes(c) ? "hot" : ""}"/>`; }); return at(k, `<svg class="vk-g qb" viewBox="0 0 192 192">${s}</svg>`); };
-  const pie = (k) => { const v = [24, 23, 20, 11], cls = ["p1", "p2", "p3", "p4"]; let a0 = -Math.PI / 2, s = ""; v.forEach((x, i) => { const a1 = a0 + x / 78 * 2 * Math.PI; const L = a1 - a0 > Math.PI ? 1 : 0; s += `<path class="${cls[i]}" d="M90,90 L${90 + 80 * Math.cos(a0)},${90 + 80 * Math.sin(a0)} A80,80 0 ${L} 1 ${90 + 80 * Math.cos(a1)},${90 + 80 * Math.sin(a1)} Z"/><text x="${90 + 52 * Math.cos((a0 + a1) / 2)}" y="${94 + 52 * Math.sin((a0 + a1) / 2)}" text-anchor="middle">x${i + 1}</text>`; a0 = a1; }); return at(k, `<svg class="vk-g pie" viewBox="0 0 180 180">${s}<line x1="90" y1="90" x2="90" y2="6" class="spin"/></svg>`); };
+  const pie = (k) => { const v = [24, 23, 20, 11], cls = ["p1", "p2", "p3", "p4"]; let a0 = -Math.PI / 2, s = ""; v.forEach((x, i) => { const a1 = a0 + x / 78 * 2 * Math.PI; const L = a1 - a0 > Math.PI ? 1 : 0; s += `<path class="${cls[i]}" d="M90,90 L${90 + 80 * Math.cos(a0)},${90 + 80 * Math.sin(a0)} A80,80 0 ${L} 1 ${90 + 80 * Math.cos(a1)},${90 + 80 * Math.sin(a1)} Z"/><text x="${90 + 52 * Math.cos((a0 + a1) / 2)}" y="${94 + 52 * Math.sin((a0 + a1) / 2)}" text-anchor="middle">x${i + 1}</text>`; a0 = a1; }); return at(k, `<svg class="vk-g pie" viewBox="0 0 180 180">${s}<line x1="90" y1="90" x2="90" y2="6" class="spin spn2" data-st='{"0":"transform:rotate(0deg)","1":"transform:rotate(983deg)","3":"transform:rotate(1495deg)"}'/></svg>`); };
+  const { stg, act, fix, tag, say, J } = VK, kdot = VK.dot;
+  // a hiker that walks along the landscape: run {k: [x0, x1]} in landscape x units
+  const walk = (a, b) => { const o = [], n = Math.max(2, Math.round(Math.abs(b - a) / 12)); for (let i = 0; i <= n; i++) { const x = a + (b - a) * i / n; o.push([x + 20, +(F(x) - 9).toFixed(1)]); } return o; };
+  const hiker = (run) => `<g class="mover hk" data-run='${J(run)}' data-dur="4500" style="opacity:0"><circle r="5" cy="-17"/><path d="M0,-12 v11 M-6,-8 h12 M0,-1 l-5,9 M0,-1 l5,9"/></g>`;
+  // three ways to get stuck
+  const stuckSvg = (() => {
+    const pan = (ox, d, bx, by, lab, k) => `<g transform="translate(${ox},0)"><path class="lc" d="${d}"/><circle class="vk-i ld stuck" data-s="${k}" cx="${bx}" cy="${by}" r="7"/><text class="vk-i lt2" data-s="${k}" x="95" y="128" text-anchor="middle">${lab}</text></g>`;
+    return `<svg class="vk-g land stk3" viewBox="0 0 600 135">${pan(0, "M5,110 Q35,40 60,70 Q90,105 120,50 Q150,0 185,110", 57, 60, "local maximum", 3)}${pan(205, "M5,110 Q40,40 70,45 L130,45 Q160,40 185,110", 100, 37, "plateau: all equal", 4)}<g class="vk-i" data-s="4"><text class="lt2" x="${205 + 78}" y="30">←?→</text></g>${pan(405, "M5,115 L30,90 L45,98 L70,70 L85,80 L110,52 L125,62 L150,35 L185,110", 70, 62, "ridge: many local maxima", 5)}</svg>`;
+  })();
+  // atoms: hot (jittering), quenched (frozen messy), annealed (lattice)
+  const atoms = (() => {
+    let o = ""; const R = (i, j) => ((Math.sin(i * 12.9898 + j * 78.233) * 43758.5453) % 1 + 1) % 1;
+    for (let i = 0; i < 16; i++) {
+      const lx = 63 + (i % 4) * 7, ly = 30 + Math.floor(i / 4) * 18;
+      const hx = 8 + R(i, 1) * 34, hy = 28 + R(i, 2) * 60, qx = 8 + R(i, 3) * 34, qy = 28 + R(i, 4) * 60;
+      o += act(`<i class="atom"></i>`, { 0: [hx, hy], 1: [qx, qy], 2: [lx, ly] }, "", `data-on="0:hot 1:cold 2:ok"`);
+    }
+    return o;
+  })();
+  // valley (minimisation) for SA: y = energy, lower is better
+  const G = (x) => 70 + 30 * Math.sin(x / 38) + 18 * Math.sin(x / 15 + 1) - x * 0.06;
+  const GP = []; for (let x = 0; x <= 560; x += 4) GP.push(`${x + 20},${G(x).toFixed(1)}`);
+  const gpt = (x) => [x + 20, +(G(x) - 8).toFixed(1)];
   const chrom = (str, cut, cls = "", k = 0, x) => at(k, `<div class="chrom ${cls}">${str.split("").map((c, i) => `<span class="${i >= cut ? "tail" : ""}">${c}</span>`).join("")}</div>`, "", "div").replace('class="vk-i "', `class="vk-i" ${x != null ? `data-x="${x}"` : ""}`);
 
   VIDEO_LESSONS.l3 = {
@@ -25,12 +48,12 @@
             "simulated annealing,",
             "and genetic algorithms.",
             "And finally, how to compare them and choose the right one."] },
-        { v: h("Find the <b>best state</b>. The path doesn't matter.") + land(dot(gx, 2, null, "ok")) + cols(card(1, "", "An <b>optimisation problem</b> finds the best solution (a state) that satisfies any constraints."), card(3, "warn", "Week 2 search: the <b>path</b> is the answer. This week: only the <b>final state</b> and its value matter.")),
+        { v: h("Find the <b>best state</b>. The path doesn't matter.") + land(dot(gx, 2, null, "ok") + hiker({ 0: walk(20, 20), 2: walk(20, gx) })) + cols(card(1, "", "An <b>optimisation problem</b> finds the best solution (a state) that satisfies any constraints."), card(3, "warn", "Week 2 search: the <b>path</b> is the answer. This week: only the <b>final state</b> and its value matter.")),
           n: ["Picture someone standing in a landscape, looking for the spot with the best value, like the lowest cost or the highest elevation.",
             "An optimisation problem is a problem where the goal is to find the best solution, a state, that satisfies the given constraints.",
             "We want that single best point.",
             "And here's the key contrast with week 2. In route finding, the path was the answer. In optimisation, we don't care how we got there. Only the final state and its value matter."] },
-        { v: h("Task assumptions") + list([[0, "An <b>environment</b>: a state-space landscape containing all possible states"], [1, "An <b>evaluation function</b> that scores any state"], [2, "The agent knows its <b>current state</b>, how good it is, and which actions are possible"]]) + card(3, "tip", "Find the state with the optimal value of the evaluation function = a <b>local search problem</b>."),
+        { v: h("Task assumptions") + land(`<rect class="vk-i fog" data-s="2" x="0" y="40" width="${250 - 45}" height="222"/><rect class="vk-i fog" data-s="2" x="${250 + 85}" y="40" width="400" height="222"/>` + hiker({ 0: walk(270, 270) }) + `<text class="vk-i lt" data-s="1" x="290" y="${F(270) - 40}" text-anchor="middle">value: ${Math.round(200 - F(270))}</text>`) + list([[0, "An <b>environment</b>: a landscape of all possible states"], [1, "An <b>evaluation function</b> that scores any state (the hiker's <b>altimeter</b>)"], [2, "The agent knows its <b>current state</b> and possible moves, nothing far away (<b>fog</b>)"]], "tight") + card(3, "tip", "Find the state with the optimal value = a <b>local search problem</b>."),
           n: ["The task makes three assumptions. There is an environment, a state-space landscape, containing all possible states.",
             "There is an evaluation function that calculates the value of any state.",
             "And the agent knows which state it's in, how good that state is, and what actions are possible from there.",
@@ -59,7 +82,7 @@
             "So a state is a string of 8 digits. Position i is the column, and the digit is the row. 1 6 2 5 7 4 8 3 means column 1's queen is in row 1, column 2's is in row 6, and so on.",
             "The cost function counts attacking pairs. For the state 2 4 7 4 8 5 5 2, the cost is 4.",
             "And for 2 4 6 8 3 1 7 5, the cost is zero. That's a solution."] },
-        { v: h("8-queens formulation") + tbl(["Element", "8-queens"], [[0, "State space", "8 rows per queen, one queen per column: 8<sup>8</sup> = <b>16,777,216</b> states"], [1, "Cost function", "Number of attacking pairs (direct or indirect)"], [2, "Goal", "Minimise cost, ideally the global minimum <b>0</b>"], [3, "Successors", "Move one queen within its column: <b>8 × 7 = 56</b>"]]) + cols(card(4, "", "<b>92</b> goal states = <b>12</b> fundamental solutions + rotations and reflections."), card(5, "tip", "We don't record the path, only the final state.")),
+        { v: h("8-queens formulation") + tbl(["Element", "8-queens"], [[0, "State space", "8 rows per queen, one queen per column: 8<sup>8</sup> = <b>16,777,216</b> states"], [1, "Cost function", "Number of attacking pairs (direct or indirect)"], [2, "Goal", "Minimise cost, ideally the global minimum <b>0</b>"], [3, "Successors", "Move one queen within its column: <b>8 × 7 = 56</b>"]]) + cols(at(3, `<svg class="vk-g qb sm" viewBox="0 0 192 192">${(() => { let q = ""; for (let c = 0; c < 8; c++) for (let rr = 0; rr < 8; rr++) q += `<rect x="${c * 24}" y="${(7 - rr) * 24}" width="24" height="24" class="${(c + rr) % 2 ? "sq1" : "sq0"}"/>`; [2, 4, 7, 4, 8, 5, 5, 2].forEach((rw, c) => { q += `<circle cx="${c * 24 + 12}" cy="${(8 - rw) * 24 + 12}" r="8" class="qn"/>`; }); for (let rw = 1; rw <= 8; rw++) if (rw !== 2) q += `<circle cx="12" cy="${(8 - rw) * 24 + 12}" r="7" class="qn ghost"/>`; return q; })()}</svg>`), card(4, "", "<b>92</b> goal states = <b>12</b> fundamental solutions + rotations and reflections."), card(5, "tip", "We don't record the path, only the final state.")),
           n: ["Using the four elements: the state space has 8 possible rows for each of 8 queens, so 8 to the 8, about 16.8 million states.",
             "The cost function is the number of pairs of queens attacking each other.",
             "The goal is to minimise the cost, ideally to the global minimum of zero.",
@@ -68,7 +91,7 @@
             "And again: we don't care about the sequence of states visited, only the final state."] }
       ] },
       { t: "Local search: the general idea", sec: [0], scenes: [
-        { v: h("How local search works") + list([[0, "Keeps a <b>single current state</b> and moves to a <b>neighbour</b>"], [1, "<b>Neighbourhood</b> = states one smallest change away (change one variable, or one small step)"], [2, "Repeat local changes until optimal / good enough, or out of time"], [3, "Doesn't keep the path, so it is <b>not systematic</b> (unlike week 2)"]]) + card(4, "tip", "<b>Advantages</b>: very little (constant) memory. Works in huge or infinite (continuous) spaces. Ideal when you only care about the final solution and don't know the goal state in advance."),
+        { v: h("How local search works") + list([[0, "Keeps a <b>single current state</b> and moves to a <b>neighbour</b>"], [1, "<b>Neighbourhood</b> = one smallest change away. 16257483 → " + say({ 0: "1625748<b>3</b>", 1: "<b>3</b>6257483", 2: "162<b>8</b>7483", 3: "1625748<b>5</b>" }, "mono")], [2, "Repeat local changes until optimal / good enough, or out of time"], [3, "Doesn't keep the path, so it is <b>not systematic</b> (unlike week 2)"]]) + card(4, "tip", "<b>Advantages</b>: very little (constant) memory. Works in huge or infinite (continuous) spaces. Ideal when you only care about the final solution and don't know the goal state in advance."),
           n: ["Local search suits these problems perfectly. It keeps a single current state and generally moves only to a neighbour.",
             "The neighbourhood is the set of states that differ by the smallest possible change: changing one variable in a discrete problem, or one small step in a continuous one.",
             "It keeps making local changes until it finds an optimal or good enough solution, or runs out of time.",
@@ -81,13 +104,13 @@
             "Technically a genetic algorithm is an evolutionary algorithm rather than a strict local search, but it grew out of the local search idea, so it's included here."] }
       ] },
       { t: "Hill climbing", sec: [2], scenes: [
-        { v: h("Hill climbing: always move to the best neighbour") + land(hc) + flow([[1, "Evaluate initial state"], [2, "Find a neighbour"], [3, "Better? Move there"], [4, "No better neighbour: <b>stop</b>"]]),
+        { v: h("Hill climbing: always move to the best neighbour") + land(hc) + flow([[1, "Evaluate initial state"], [2, "Find a neighbour"], [3, "Better? Move there"], [4, "No better neighbour: <b>stop</b>"]]) + card(4, "ana", "Like climbing Everest in <b>thick fog</b> with <b>amnesia</b>: you only feel the slope under your feet."),
           n: ["Hill climbing is a heuristic search algorithm. It improves a solution step by step, guided by a heuristic or cost function. It doesn't guarantee the true optimum, but it often finds a good one quickly, with little memory.",
             "Step one: evaluate the initial state. If it's the goal, return it.",
             "Otherwise, find a neighbouring state and evaluate it.",
             "If it's better than the current state, move there. Then repeat.",
-            "It stops when no neighbour is any higher. In plain words: keep walking uphill until you can't. Notice where it stopped: on a local maximum, not the global one."] },
-        { v: h("Why it gets stuck") + cols(list([[0, "<b>No search tree</b>: knows only the current state"], [1, "<b>No lookahead</b>: only immediate neighbours"], [2, "<b>No backtracking</b>: can't go back"]]), list([[3, "Stuck at a <b>local maximum</b>"], [4, "Stuck on a <b>plateau</b> (all neighbours equal)"], [5, "Stuck on a <b>ridge</b> (a sequence of local maxima)"]])) + card(6, "tip", "Fix: allow a <b>limited</b> number of <b>sideways moves</b> (equal value) to cross a plateau. The limit prevents infinite loops."),
+            "It stops when no neighbour is any higher. In plain words: keep walking uphill until you can't. It's like climbing Everest in thick fog with amnesia. You only feel the slope under your feet, and you forget where you've been. Notice where it stopped: on a local maximum, not the global one."] },
+        { v: h("Why it gets stuck") + flow([[0, "<b>No search tree</b>: only the current state"], [1, "<b>No lookahead</b>: only neighbours"], [2, "<b>No backtracking</b>"]], "sm") + stuckSvg + card(6, "tip", "Fix: allow a <b>limited</b> number of <b>sideways moves</b> (equal value) to cross a plateau. The limit prevents infinite loops."),
           n: ["Hill climbing has three limitations. It keeps no search tree, so it only knows the current state.",
             "It has no lookahead. It only looks at immediate neighbours and never plans further.",
             "And no backtracking. It can't go back, because it doesn't remember anything.",
@@ -103,12 +126,14 @@
             "Here's the steepest ascent pseudocode. Take the highest valued successor. If it's no better than the current state, return the current state. Otherwise move to it. If you use a cost h instead of a value, look for the lowest h."] }
       ] },
       { t: "Simulated annealing", sec: [3], scenes: [
-        { v: h("The idea comes from <b>metallurgy</b>") + cols(card(0, "", "<b>Annealing</b>: heat metal, then cool it gradually so it settles into a low-energy, stable crystal structure."), card(1, "bad", "<b>Fast cooling</b> (quenching in water): structure freezes badly = stuck in a <b>local optimum</b>."), card(2, "tip", "<b>Slow cooling</b> (in air): settles uniformly = the <b>global optimum</b>.")) + card(3, "", "SA uses a <b>temperature T</b> that starts high and slowly decreases."),
+        { v: h("The idea comes from <b>metallurgy</b>") + stg(0, [atoms,
+            act(tag(say({ 0: "HOT: atoms move freely", 1: "QUENCHED: frozen in a mess", 2: "ANNEALED: neat crystal" }), "big"), { 0: [25, 9], 2: [74, 9] }, "", 'data-on="0:hot 1:cold 2:ok"')
+          ], "16/3.4", "tall") + cols(card(0, "", "<b>Annealing</b>: heat, then cool <b>gradually</b>."), card(1, "bad", "<b>Quenching</b>: freezes badly = <b>local optimum</b>."), card(2, "tip", "<b>Slow cooling</b>: <b>global optimum</b>."), card(3, "", "SA: <b>temperature T</b> starts high, slowly falls.")),
           n: ["Simulated annealing borrows an idea from metallurgy. Annealing means heating a metal, then cooling it gradually, so its internal structure settles into a stable, low-energy state.",
             "Cool it too fast, like quenching in water, and the structure freezes in a poor arrangement. That's like getting trapped in a local optimum.",
             "Cool it slowly, in air, and it has time to settle into a better arrangement. That's like reaching the global optimum.",
             "So simulated annealing uses a temperature, T, that starts high and gradually decreases."] },
-        { v: h("SA algorithm (minimising energy E)") + list([[0, "Start: random state, energy E, temperature T"], [1, "Pick a <b>random</b> neighbour. ΔE = E(neighbour) − E(current)"], [2, "<b>Better</b> (ΔE &lt; 0): <b>always</b> move"], [3, "<b>Worse</b>: move only with probability"]]) + fx(3, "p = e<sup>−ΔE / T</sup> &nbsp;&nbsp;(or e<sup>−ΔE / kT</sup>)", "c") + cols(card(4, "", "Bigger ΔE (much worse) → <b>smaller</b> p"), card(5, "", "Lower T (later) → <b>smaller</b> p")),
+        { v: h("SA algorithm (minimising energy E)") + `<svg class="vk-g land sav" viewBox="0 -5 600 140"><polyline class="lc" points="${GP.join(" ")}"/><text class="lt2" x="590" y="126" text-anchor="end">lower = better (energy)</text><circle class="vk-i ld ghost" data-s="1" data-x="2" cx="${gpt(200)[0]}" cy="${gpt(200)[1]}" r="7"/><circle class="vk-i ld ghost" data-s="3" data-x="4" cx="${gpt(232)[0]}" cy="${gpt(232)[1]}" r="7"/><text class="vk-i lt" data-s="3" data-x="4" x="${gpt(232)[0]}" y="${gpt(232)[1] - 14}" text-anchor="middle">worse, accepted with p</text>${kdot({ 0: [...gpt(150), 1], 2: [...gpt(200), 1], 3: [...gpt(200), 1], 4: [...gpt(232), 1] }, "hot", 8)}</svg>` + list([[0, "Start: random state, energy E, temperature T"], [1, "Pick a <b>random</b> neighbour. ΔE = E(neighbour) − E(current)"], [2, "<b>Better</b> (ΔE &lt; 0): <b>always</b> move"], [3, "<b>Worse</b>: move only with probability"]], "tight") + fx(3, "p = e<sup>−ΔE / T</sup> &nbsp;&nbsp;(or e<sup>−ΔE / kT</sup>)", "c") + cols(card(4, "", "Bigger ΔE (much worse) → <b>smaller</b> p"), card(5, "", "Lower T (later) → <b>smaller</b> p")),
           n: ["Here's the algorithm. Start with a random state, with energy E, the objective value, at temperature T.",
             "Perturb the state randomly to get a neighbour, and compute delta E, the neighbour's energy minus the current energy.",
             "If the neighbour is better, meaning lower energy, always move to it. That's the greedy, valley descending part, just like hill climbing.",

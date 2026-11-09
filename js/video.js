@@ -159,7 +159,7 @@
         const fr = pts.map(([x, y]) => svgEl ? { transform: `translate(${x}px,${y}px)` } : { left: x + "%", top: y + "%" });
         el.getAnimations().forEach(a => a.cancel());
         if (fr.length < 2 || !el.animate) { Object.assign(el.style, fr[fr.length - 1]); return; }
-        el.animate(fr, { duration: (pts.length - 1) * 900 / rate, fill: "forwards", easing: "ease-in-out" });
+        el.animate(fr, { duration: (+el.dataset.dur || (pts.length - 1) * 900) / rate, fill: "forwards", easing: el.dataset.dur ? "linear" : "ease-in-out" });
       });
     }
     function render(i, animate = true) {

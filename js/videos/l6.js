@@ -22,6 +22,45 @@
     return base(c, r);
   });
 
+  const { stg, act, fix, tag, say, person, J } = VK;
+  // svg 4x3 grid world with a robot that walks paths
+  const CX = c => 35 + (c - 1) * 60, CY = r => 35 + (3 - r) * 60;
+  const CELLS = []; for (let rr = 3; rr >= 1; rr--) for (let c = 1; c <= 4; c++) CELLS.push([c, rr]);
+  const isT = (c, rr) => c === 4 && (rr === 3 || rr === 2);
+  const sg = (cell = () => "", extra = "", cap = "", cls = "") => `<svg class="vk-g sg6 ${cls}" viewBox="0 0 250 ${cap ? 212 : 190}">${CELLS.map(([c, rr]) => {
+      if (c === 2 && rr === 2) return `<rect class="sc6 wall" x="${CX(c) - 29}" y="${CY(rr) - 29}" width="58" height="58" rx="5"/>`;
+      const t = isT(c, rr) ? (rr === 3 ? "pos" : "neg") : "";
+      return `<rect class="sc6 ${t}" x="${CX(c) - 29}" y="${CY(rr) - 29}" width="58" height="58" rx="5" ${t ? "" : cell(c, rr)}/>` + (t ? `<text class="tt6" x="${CX(c)}" y="${CY(rr) + 7}" text-anchor="middle">${rr === 3 ? "+1" : "−1"}</text>` : "");
+    }).join("")}${extra}${cap}</svg>`;
+  const pth = (pts, dx = 0) => pts.map(([c, rr]) => [CX(c) + dx, CY(rr)]);
+  const bot = (run, dur, cls = "") => `<g class="mover bot6 ${cls}" data-run='${J(run)}' ${dur ? `data-dur="${dur}"` : ""} style="opacity:0"><circle r="12"/><circle class="e" cx="-4" cy="-3" r="2.2"/><circle class="e" cx="4" cy="-3" r="2.2"/></g>`;
+  const cap6 = T => `<text class="cap6" x="125" y="206" text-anchor="middle" data-t='${J(T)}'>${T[Object.keys(T)[0]]}</text>`;
+  const gtx = (c, rr, t, k, cls = "pa6") => `<text class="${cls} ${k != null ? "vk-i" : ""}" ${k != null ? `data-s="${k}"` : ""} x="${CX(c)}" y="${CY(rr) + (cls === "pr6" ? -14 : 7)}" text-anchor="middle">${t}</text>`;
+  const PATH_OPT = [[1, 1], [1, 2], [1, 3], [2, 3], [3, 3], [4, 3]];
+  // value iteration (R(s) form, gamma 1) for the heat map
+  const VI = (n) => { const U = {}; CELLS.forEach(([c, rr]) => U[c + "," + rr] = isT(c, rr) ? (rr === 3 ? 1 : -1) : 0);
+    const D = { U: [0, 1], D: [0, -1], L: [-1, 0], R: [1, 0] }, side = { U: ["L", "R"], D: ["L", "R"], L: ["U", "D"], R: ["U", "D"] };
+    const mv = (c, rr, d) => { const nc = c + D[d][0], nr = rr + D[d][1]; return nc < 1 || nc > 4 || nr < 1 || nr > 3 || (nc === 2 && nr === 2) ? c + "," + rr : nc + "," + nr; };
+    for (let i = 0; i < n; i++) { const V = { ...U }; CELLS.forEach(([c, rr]) => { if (isT(c, rr) || (c === 2 && rr === 2)) return;
+      V[c + "," + rr] = -0.04 + Math.max(...Object.keys(D).map(d => 0.8 * U[mv(c, rr, d)] + 0.1 * U[mv(c, rr, side[d][0])] + 0.1 * U[mv(c, rr, side[d][1])])); }); Object.assign(U, V); }
+    return U; };
+  const VIS = { 1: VI(0), 2: VI(1), 3: VI(3), 4: VI(30) };
+  const heat = (c, rr) => `data-st='${J(Object.fromEntries(Object.entries(VIS).map(([k, U]) => { const v = U[c + "," + rr]; return [k, v >= 0 ? `fill:var(--good);fill-opacity:${(0.08 + v * 0.8).toFixed(2)}` : `fill:var(--bad);fill-opacity:${(Math.min(1, -v) * 0.7).toFixed(2)}`]; })))}'`;
+  const heatVal = (c, rr) => `<text class="hv6" x="${CX(c)}" y="${CY(rr) + 5}" text-anchor="middle" data-t='${J(Object.fromEntries(Object.entries(VIS).map(([k, U]) => [k, U[c + "," + rr].toFixed(2)])))}'>0.00</text>`;
+  // nudge: move part way from old towards the target
+  const nudge = (ks, lo, hi, old, tgt, nw, a) => { const X = v => 40 + (v - lo) / (hi - lo) * 520;
+    return `<svg class="vk-g nd6" viewBox="0 0 600 96"><line class="trk6" x1="40" y1="50" x2="560" y2="50"/>
+      <line class="vk-i err6" data-s="${ks[2]}" x1="${X(old)}" y1="50" x2="${X(tgt)}" y2="50"/><text class="vk-i lt6 bad" data-s="${ks[2]}" x="${(X(old) + X(tgt)) / 2}" y="76" text-anchor="middle">error ${+(tgt - old).toFixed(2)}</text>
+      <line class="tk6" x1="${X(old)}" y1="38" x2="${X(old)}" y2="62"/><text class="lt6" x="${X(old)}" y="82" text-anchor="middle">old ${old}</text>
+      <g class="vk-i" data-s="${ks[1]}"><path class="tg6" d="M${X(tgt)} 30 l-8 -14 h16 z"/><text class="lt6 ok" x="${X(tgt)}" y="82" text-anchor="middle">target ${tgt}</text></g>
+      <g class="mover nb6" data-run='${J({ [ks[0]]: [[X(old), 50]], [ks[3]]: [[X(old), 50], [X(nw), 50]] })}' data-dur="1800" style="opacity:0"><circle r="9"/></g>
+      <text class="vk-i lt6 acc" data-s="${ks[3]}" x="${X(nw)}" y="22" text-anchor="middle">new ${nw} (moved α = ${a} of the gap)</text></svg>`; };
+  // restaurants: explore each a few times, then exploit the best
+  const RS = [["Pho", 3.1], ["Pizza", 4.2], ["Sushi", 3.6], ["Tacos", 2.5]];
+  const rest = RS.map(([n, v], i) => act(`<div class="tg rs6" data-on="${i === 1 ? "3:best6" : ""}"><b>${n}</b><br>${say({ 0: "rating ?", 1: "rating ? (assume 5)", 2: "rating " + v })}<br>${say({ 0: "tried 0×", 2: "tried 2×", 3: i === 1 ? "tried 9×" : "tried 2×" }, "sm")}</div>`, { 0: [14 + i * 24, 40] })).join("")
+    + `<div class="a" data-run='${J({ 0: [[50, 84]], 2: [[50, 84], [14, 84], [38, 84], [62, 84], [86, 84]], 3: [[86, 84], [38, 84]] })}' data-dur="3200" style="opacity:0">${person("agent", 0)}</div>`
+    + act(tag(say({ 2: "explore: try everything N<sub>e</sub> times", 3: "exploit: go back to the best", 5: "rating update = this meal + best next meal" }), "lbl"), { 0: [50, 4, 0], 2: [50, 4, 1] });
+
   VIDEO_LESSONS.l6 = {
     title: "L6: MDPs and Reinforcement Learning", chapters: [
       { t: "Sequential decisions and background", sec: [0], scenes: [
@@ -67,18 +106,23 @@
             "And the core decision rule is maximum expected utility. Route A gives plus 10 with probability 0.8 and minus 10 with 0.2, so its expected utility is 6. Route B gives 7 for certain. Choose B, even though A has the bigger possible payoff."] }
       ] },
       { t: "The 4×3 grid world", sec: [0], scenes: [
-        { v: h("The 4×3 grid world") + split(grid((c, r) => c === 1 && r === 1 ? [`<b class="ga">START</b>`, ""] : base(c, r), 0), list([[0, "Cells are (column, row). Wall at <b>(2,2)</b>. Agent starts at <b>(1,1)</b>."], [1, "Actions everywhere: Up, Down, Left, Right. Fully observable."], [2, "Terminal states: <b>(4,3) = +1</b>, <b>(4,2) = −1</b>. Entering one ends the episode."], [3, "<b>Living reward −0.04</b> for every step into a non-terminal state, so the agent doesn't wander forever."]], "tight")),
+        { v: h("The 4×3 grid world") + split(at(0, sg(() => "", gtx(1, 1, "START", null, "st6") + bot({ 0: [[CX(1), CY(1)]], 3: pth(PATH_OPT) }, 3500), cap6({ 0: "agent starts at (1,1)", 3: "5 steps × −0.04 = −0.2, then +1 → total 0.8" }))), list([[0, "Cells are (column, row). Wall at <b>(2,2)</b>. Agent starts at <b>(1,1)</b>."], [1, "Actions everywhere: Up, Down, Left, Right. Fully observable."], [2, "Terminal states: <b>(4,3) = +1</b>, <b>(4,2) = −1</b>. Entering one ends the episode."], [3, "<b>Living reward −0.04</b> for every step into a non-terminal state, so the agent doesn't wander forever."]], "tight"), "even"),
           n: ["Here's the classic example. A 4 by 3 grid. Each cell is named by column then row. There's a wall at 2 comma 2, and the agent starts at 1 comma 1.",
             "In every state, the agent can try up, down, left or right. It always knows exactly where it is, so it's fully observable.",
             "There are two terminal states. 4 comma 3 is worth plus 1, and 4 comma 2 is worth minus 1. Entering either one ends the episode.",
             "Every other step costs a small living reward of minus 0.04. That discourages the agent from wandering around forever."] },
-        { v: h("Actions don't always go as planned") + split(slipGrid(1), list([[0, "Transition model for every action:"], [1, "<b>0.8</b>: move in the <b>intended</b> direction."], [2, "<b>0.1</b>: slip at a right angle to the <b>left</b>. <b>0.1</b>: to the <b>right</b>."], [3, "Bump into a wall or the edge → <b>stay put</b>."], [4, "Depends only on (s, a), never on history. That's what makes it <b>Markovian</b>."]], "tight")),
+        { v: h("Actions don't always go as planned") + split(at(0, sg(() => "", gtx(3, 2, "0.8", 1, "pr6") + gtx(2, 1, "0.1", 2, "pr6") + gtx(4, 1, "0.1", 2, "pr6")
+      + bot({ 1: [[CX(3), CY(1)], [CX(3), CY(2) + 14]] }, 0, "gh6") + bot({ 2: [[CX(3), CY(1)], [CX(2) + 14, CY(1)]] }, 0, "gh6") + bot({ 2: [[CX(3), CY(1)], [CX(4) - 14, CY(1)]] }, 0, "gh6")
+      + bot({ 0: [[CX(3), CY(1)]], 3: [[CX(3), CY(1)], [CX(3), CY(1) + 24], [CX(3), CY(1)]] }, 1400),
+      cap6({ 0: "at (3,1), intends ↑", 1: "80%: goes where it meant", 2: "like walking on ice: 10% slide each side", 3: "trying ↓ into the edge: bump, stay put" }))), list([[0, "Transition model for every action:"], [1, "<b>0.8</b>: move in the <b>intended</b> direction."], [2, "<b>0.1</b>: slip at a right angle to the <b>left</b>. <b>0.1</b>: to the <b>right</b>."], [3, "Bump into a wall or the edge → <b>stay put</b>."], [4, "Depends only on (s, a), never on history. That's what makes it <b>Markovian</b>."]], "tight"), "even"),
           n: ["Now the stochastic part. Every action follows the same transition model. Say the agent is at 3 comma 1 and intends to go up.",
             "80 percent of the time, it moves in the intended direction, up to 3 comma 2.",
-            "10 percent of the time it slips at a right angle to the left, and 10 percent of the time at a right angle to the right. So from 3 comma 1, it might end up at 2 comma 1 or 4 comma 1.",
+            "Like walking on ice: 10 percent of the time it slips at a right angle to the left, and 10 percent of the time at a right angle to the right. So from 3 comma 1, it might end up at 2 comma 1 or 4 comma 1.",
             "If a move would hit a wall or the edge of the grid, the agent just stays where it is.",
             "And these probabilities depend only on the current state and the action, never on the history. That's what makes the model Markovian."] },
-        { v: h("The optimal policy") + split(policyGrid(0), list([[0, "Each arrow = the best action in that state (R = −0.04)."], [1, "Near −1, the agent takes the <b>long safe way</b> round: from (3,1) it goes ← rather than risk slipping into −1."], [2, "At (3,2) it goes ↑: a slip right would hit −1, but going up is worth the 10% risk."], [3, "Change the living reward and the policy changes: very negative R → rush to any exit, even −1."]], "tight")),
+        { v: h("The optimal policy") + split(at(0, sg(() => "", Object.entries(PI).map(([kk, a]) => { const [c, rr] = kk.split(",").map(Number); return gtx(c, rr, a, null); }).join("")
+      + bot({ 0: pth(PATH_OPT) }, 3500) + bot({ 1: pth([[3, 1], [2, 1], [1, 1], [1, 2], [1, 3], [2, 3], [3, 3], [4, 3]], 8) }, 5000, "b2"),
+      cap6({ 0: "follow the arrows from (1,1)", 1: "from (3,1): the long, safe way round" }))), list([[0, "Each arrow = the best action in that state (R = −0.04)."], [1, "Near −1, the agent takes the <b>long safe way</b> round: from (3,1) it goes ← rather than risk slipping into −1."], [2, "At (3,2) it goes ↑: a slip right would hit −1, but going up is worth the 10% risk."], [3, "Change the living reward and the policy changes: very negative R → rush to any exit, even −1."]], "tight"), "even"),
           n: ["Here's an optimal policy for this grid, with the living reward of minus 0.04. Each arrow is the best action in that state.",
             "Look at the bottom row. From 3 comma 1, the agent goes left, the long way round, instead of going up past the minus 1 square. Going up from there risks slipping right, into trouble.",
             "At 3 comma 2, right next to the minus 1, it still goes up. A slip to the right would hit the minus 1, but that's only a 10 percent chance, and up leads quickly to the plus 1.",
@@ -106,11 +150,12 @@
             "Here's an analogy. U of s asks: how good is this restaurant for me? Q of s a asks: how good is it if I order this particular dish? The best dish decides how good the restaurant is."] }
       ] },
       { t: "Value iteration", sec: [2], scenes: [
-        { v: h("Value iteration") + list([[0, "n states → n Bellman equations. The <b>max</b> makes them <b>non-linear</b> → solve <b>iteratively</b>."]], "tight") + flow([[1, "Start with arbitrary U (e.g. all 0)"], [2, "<b>Bellman update</b> every state at once"], [3, "Repeat until the biggest change is tiny"], [4, "Extract π: best action in each state"]]) + fx(2, "U<sub>i+1</sub>(s) ← max<sub>a</sub> Σ<sub>s′</sub> P(s′ | s, a) [ R(s, a, s′) + γ U<sub>i</sub>(s′) ]", "c") + fx(3, "Stop when max<sub>s</sub> |U<sub>i+1</sub>(s) − U<sub>i</sub>(s)| < ε(1 − γ)/γ &nbsp; (γ = the contraction factor)", "sm") + card(5, "tip", "Guaranteed to reach a unique equilibrium → the <b>optimal</b> policy."),
+        { v: h("Value iteration") + list([[0, "n states → n Bellman equations. The <b>max</b> makes them <b>non-linear</b> → solve <b>iteratively</b>."]], "tight") + split(at(1, sg(heat, CELLS.filter(([c, rr]) => !isT(c, rr) && !(c === 2 && rr === 2)).map(([c, rr]) => heatVal(c, rr)).join("") + gtx(1, 1, "", null), cap6({ 1: "iteration 0: all 0", 2: "iteration 1: only next to +1 changes", 3: "iteration 3: value spreads like heat", 4: "converged" }))),
+      list([[1, "Start with arbitrary U (e.g. all 0)."], [2, "<b>Bellman update</b> every state at once."], [3, "Repeat until the biggest change is tiny."], [4, "Extract π: best action in each state."]], "tight") + fx(2, "U<sub>i+1</sub>(s) ← max<sub>a</sub> Σ<sub>s′</sub> P(s′ | s, a) [ R + γ U<sub>i</sub>(s′) ]", "sm") + fx(3, "Stop when max change < ε(1 − γ)/γ", "sm") + card(5, "tip", "Reaches a unique equilibrium → the <b>optimal</b> policy."), "even"),
           n: ["Value iteration computes the optimal policy in two stages: first the utility of every state, then the best action in each state. If there are n states, there are n Bellman equations with n unknowns. Because of the max, they're non-linear, so we can't solve them as a simple linear system. We solve them iteratively.",
             "Start with arbitrary utilities, say all zero.",
             "Then apply the Bellman update to every state at once: compute the right-hand side using the current utilities, and make that the new utility. Each state gets refreshed from its neighbours.",
-            "Repeat. Information spreads outwards from the rewards, one step per iteration. Stop when the biggest change in any state's utility falls below a small threshold, which depends on gamma, the contraction factor.",
+            "Repeat. Information spreads outwards from the rewards, one step per iteration, like heat spreading from a fire across a cold room. Stop when the biggest change in any state's utility falls below a small threshold, which depends on gamma, the contraction factor.",
             "Finally, extract the policy: in each state, pick the action with the highest expected utility.",
             "Applied infinitely often, this is guaranteed to reach an equilibrium. The utilities there are the unique solution of the Bellman equations, and the policy is optimal."] },
         { v: h("One Bellman update, by hand") + split(grid((c, r) => c === 3 && r === 3 ? [`<b class="ga">●</b>${sp(3, "<span class=\"gu\">U₁ = 0.792</span>")}`, "cur"] : base(c, r), 0), fx(0, "Iteration 0: all U = 0. γ = 1. R = −0.04 per step, +1 for entering (4,3). Update (3,3).", "sm") + fx(1, "<b>Right</b>: 0.8 → (4,3): +1 &nbsp; 0.1 → bump up, stay: −0.04 &nbsp; 0.1 → (3,2): −0.04<br>Q = 0.8(1) + 0.1(−0.04) + 0.1(−0.04) = <b>0.792</b>", "sm") + fx(2, "<b>Up</b>: 0.8 → stay: −0.04 &nbsp; 0.1 → (4,3): +1 &nbsp; 0.1 → (2,3): −0.04<br>Q = −0.032 + 0.1 − 0.004 = <b>0.064</b>", "sm") + fx(3, "U<sub>1</sub>(3,3) = max = <b>0.792</b> (Right is best). Next iteration, (2,3) will \"see\" this value.", "sm ok")),
@@ -148,7 +193,8 @@
             "RL applications fall into two areas: game playing, from Arthur Samuel's checkers program in 1952 to DeepMind's AlphaGo, which uses deep Q-networks, and robot control."] }
       ] },
       { t: "Passive RL: direct utility, ADP, TD", sec: [5], scenes: [
-        { v: h("Learning from trials under a fixed policy") + fx(0, "Trial 1: (1,1)→(1,2)→(1,3)→(1,2)→(1,3)→(2,3)→(3,3)→(4,3) <b>+1</b>", "sm") + fx(0, "Trial 2: (1,1)→(1,2)→(1,3)→(2,3)→(3,3)→(3,2)→(3,3)→(4,3) <b>+1</b>", "sm") + fx(0, "Trial 3: (1,1)→(1,2)→(1,3)→(2,3)→(3,3)→(3,2)→(4,2) <b>−1</b>", "sm") + list([[1, "The agent follows a fixed π, but knows <b>neither P(s′ | s, π(s)) nor R</b>."], [2, "Each step it perceives the <b>state</b> and the <b>reward</b>. Goal: learn U<sup>π</sup>(s) = expected sum of discounted rewards from s (here γ = 1)."]], "tight"),
+        { v: h("Learning from trials under a fixed policy") + split(at(0, sg(() => "", bot({ 0: pth([[1, 1], [1, 2], [1, 3], [1, 2], [1, 3], [2, 3], [3, 3], [4, 3]], -9) }, 5000) + bot({ 1: pth([[1, 1], [1, 2], [1, 3], [2, 3], [3, 3], [3, 2], [3, 3], [4, 3]], 0) }, 5000, "b2") + bot({ 2: pth([[1, 1], [1, 2], [1, 3], [2, 3], [3, 3], [3, 2], [4, 2]], 9) }, 4500, "b3"),
+      cap6({ 0: "trial 1: reaches +1", 1: "trial 2: reaches +1", 2: "trial 3: slips into −1" }))), fx(0, "T1: (1,1)→(1,2)→(1,3)→(1,2)→(1,3)→(2,3)→(3,3)→(4,3) <b>+1</b>", "sm") + fx(1, "T2: (1,1)→(1,2)→(1,3)→(2,3)→(3,3)→(3,2)→(3,3)→(4,3) <b>+1</b>", "sm") + fx(2, "T3: (1,1)→(1,2)→(1,3)→(2,3)→(3,3)→(3,2)→(4,2) <b>−1</b>", "sm"), "even") + list([[1, "The agent follows a fixed π, but knows <b>neither P(s′ | s, π(s)) nor R</b>."], [2, "Each step it perceives the <b>state</b> and the <b>reward</b>. Goal: learn U<sup>π</sup>(s) = expected sum of discounted rewards from s (here γ = 1)."]], "tight"),
           n: ["In passive learning, the agent follows a fixed policy through the grid, over and over. Each run, from 1 comma 1 to a terminal, is called a trial. Here are three trials. Two end at plus 1, and one ends at minus 1 because of a slip.",
             "The agent doesn't know the transition model, or the reward function. It just follows the policy.",
             "On each step it perceives the state it reached and the reward it got. From these trials, it wants to learn U pi of s, the expected sum of rewards from each state onwards when following the policy. We'll use gamma equal to 1."] },
@@ -164,12 +210,12 @@
             "With the learned model and the observed rewards, it plugs everything into the Bellman equations for the fixed policy.",
             "Because the policy is fixed, there's no max, so the equations are linear, and any linear algebra package can solve them.",
             "ADP is model-based. Because it uses the connections between states, it learns much faster than direct utility estimation."] },
-        { v: h("3. Temporal difference (TD) learning") + fx(0, "U(s) ← U(s) + α [ R(s, π(s), s′) + γ U(s′) − U(s) ]", "c") + list([[1, "<b>TD target</b> = R + γU(s′). <b>TD error</b> = target − U(s). Move U(s) a step α towards the target."], [2, "Updates after <b>every transition</b>. <b>No model</b> needed (model-free)."]], "tight") + fx(3, "U(s) = 0.5, U(s′) = 0.8, R = −0.04, γ = 0.9, α = 0.1<br>Target = −0.04 + 0.9(0.8) = 0.68. &nbsp; Error = 0.68 − 0.5 = 0.18<br>New U(s) = 0.5 + 0.1(0.18) = <b>0.518</b>", "sm") + card(4, "tip", "TD matches one <b>observed</b> successor. ADP matches <b>all</b> successors by probability. Same final values."),
+        { v: h("3. Temporal difference (TD) learning") + fx(0, "U(s) ← U(s) + α [ R(s, π(s), s′) + γ U(s′) − U(s) ]", "c") + list([[1, "<b>TD target</b> = R + γU(s′). <b>TD error</b> = target − U(s). Move U(s) a step α towards the target."], [2, "Updates after <b>every transition</b>. <b>No model</b> needed (model-free)."]], "tight") + fx(3, "U(s) = 0.5, U(s′) = 0.8, R = −0.04, γ = 0.9, α = 0.1. Target = −0.04 + 0.9(0.8) = 0.68. Error = 0.18. New U(s) = 0.5 + 0.1(0.18) = <b>0.518</b>", "sm") + at(3, nudge([3, 3, 3, 3], 0.4, 0.75, 0.5, 0.68, 0.518, 0.1)) + fx(4, "TD: the one <b>observed</b> successor. ADP: <b>all</b> successors by probability. Same final values.", "sm"),
           n: ["Method 3, temporal difference learning. It updates directly from each observed transition, from s to s prime.",
             "The TD target is the reward plus gamma times the utility of the next state. The TD error is how far the current estimate is from that target. Move U of s a fraction alpha of the way towards the target.",
             "It updates after every single transition, and needs no model at all. That makes it model-free.",
             "Example: U of s is 0.5, U of s prime is 0.8, the reward is minus 0.04, gamma 0.9 and alpha 0.1. The target is minus 0.04 plus 0.72, which is 0.68. The error is 0.68 minus 0.5, which is 0.18. So the new U of s is 0.5 plus 0.1 times 0.18, which is 0.518.",
-            "TD versus ADP. TD adjusts a state to agree with the one successor it actually saw. ADP adjusts it to agree with all possible successors, weighted by their probabilities. TD is a crude but efficient approximation of ADP, and both converge to the same values."] }
+            "Think of guessing your commute time. Each day you see what actually happened and move your guess a little towards it, not all the way. TD versus ADP. TD adjusts a state to agree with the one successor it actually saw. ADP adjusts it to agree with all possible successors, weighted by their probabilities. TD is a crude but efficient approximation of ADP, and both converge to the same values."] }
       ] },
       { t: "Active RL: Q-learning", sec: [6], scenes: [
         { v: h("Q-learning: learn Q(s, a) directly") + list([[0, "<b>Active</b>: the agent chooses its own actions. Learns <b>Q(s, a)</b> instead of U(s)."], [1, "Once Q is right, acting optimally is easy: π*(s) = argmax<sub>a</sub> Q(s, a), and U(s) = max<sub>a</sub> Q(s, a)."]], "tight") + fx(2, "Q(s, a) ← Q(s, a) + α [ R(s, a, s′) + γ max<sub>a′</sub> Q(s′, a′) − Q(s, a) ]", "c") + flow([[3, "Observe s"], [3, "Choose a (explore or exploit)"], [3, "Do it. See R and s′"], [3, "Update Q"], [3, "Repeat"]]) + cols(card(4, "tip", "<b>Model-free</b>: no P(s′ | s, a) needed, to learn or to choose actions."), card(5, "warn", "No look-ahead, so it struggles when rewards are <b>sparse</b>.")),
@@ -179,17 +225,17 @@
             "The loop: observe the state, choose an action, either exploring or exploiting, do it, observe the reward and the next state, update Q, and repeat until Q converges.",
             "Q-learning never needs a transition model, not to learn and not to choose actions. That's exactly why it's called model-free.",
             "Its weakness: it can't look ahead into the future, so it struggles when rewards are sparse."] },
-        { v: h("Worked example: one Q-update") + fx(0, "Q(s, a) = 2, &nbsp; R = 1, &nbsp; γ = 0.9, &nbsp; max<sub>a′</sub> Q(s′, a′) = 3, &nbsp; α = 0.5", "c") + fx(1, "Target = R + γ max Q(s′, a′) = 1 + 0.9 × 3 = <b>3.7</b>", "c") + fx(2, "Error = 3.7 − 2 = 1.7", "c") + fx(3, "New Q(s, a) = 2 + 0.5 × 1.7 = <b>2.85</b>", "c ok") + card(4, "warn", "Use the <b>max</b> over the next state's actions, not the Q of the action you happen to take next. And multiply the <b>whole</b> error by α."),
+        { v: h("Worked example: one Q-update") + fx(0, "Q(s, a) = 2, &nbsp; R = 1, &nbsp; γ = 0.9, &nbsp; max<sub>a′</sub> Q(s′, a′) = 3, &nbsp; α = 0.5", "c") + cols(fx(1, "Target = 1 + 0.9 × 3 = <b>3.7</b>", "c"), fx(2, "Error = 3.7 − 2 = 1.7", "c")) + fx(3, "New Q(s, a) = 2 + 0.5 × 1.7 = <b>2.85</b>", "c ok") + nudge([0, 1, 2, 3], 1.5, 4, 2, 3.7, 2.85, 0.5) + card(4, "warn", "Use the <b>max</b> over the next state's actions, not the Q of the action you happen to take next. And multiply the <b>whole</b> error by α."),
           n: ["Let's do one update. The current Q of s a is 2. The reward is 1, gamma is 0.9, the best Q value in the next state is 3, and alpha is 0.5.",
             "The target is 1 plus 0.9 times 3, which is 3.7.",
             "The error is 3.7 minus 2, which is 1.7.",
-            "So the new Q is 2 plus 0.5 times 1.7, which is 2.85.",
+            "So the new Q is 2 plus 0.5 times 1.7, which is 2.85. With alpha 0.5, the estimate moves exactly halfway to the target.",
             "Two things to watch. Use the max over the next state's actions, not whichever action you happen to take next. And multiply the whole error by alpha, not just part of it."] },
-        { v: h("Exploration: greed vs curiosity") + fx(0, "f(u, n) = R<sup>+</sup> if n < N<sub>e</sub>, &nbsp; otherwise u", "c") + list([[1, "u = estimated utility (greed). n = how many times this action was tried (curiosity)."], [2, "R<sup>+</sup> = an <b>optimistic</b> reward estimate. Untried actions look great, so the agent tries each one at least <b>N<sub>e</sub></b> times."], [3, "After that, it becomes <b>greedy</b> and exploits what it learned."], [4, "<b>DQN</b> = Q-learning with a deep neural network approximating Q."]], "tight") + card(5, "ana", "A tourist rating dishes at each restaurant: after each meal, nudge the rating towards \"how good this meal was + how good the best next meal could be\"."),
+        { v: h("Exploration: greed vs curiosity") + fx(0, "f(u, n) = R<sup>+</sup> if n < N<sub>e</sub>, &nbsp; otherwise u", "c") + list([[1, "u = estimated utility (greed). n = how many times this action was tried (curiosity)."], [2, "R<sup>+</sup> = an <b>optimistic</b> reward estimate. Untried actions look great, so the agent tries each one at least <b>N<sub>e</sub></b> times."], [3, "After that, it becomes <b>greedy</b> and exploits what it learned."], [4, "<b>DQN</b> = Q-learning with a deep neural network approximating Q."]], "tight") + stg(1, [rest], "16/2.2", "ex6"),
           n: ["The exploratory Q-learning agent uses an exploration function, f of u and n, to trade off greed against curiosity. It should increase with u and decrease with n.",
-            "u is the estimated utility, which is greed. n is how many times the action has been tried, which drives curiosity.",
-            "A simple version: if an action has been tried fewer than N e times, pretend it's worth R plus, an optimistic estimate of the best possible reward. So untried actions look attractive, and the agent tries every state-action pair at least N e times.",
-            "After that, it uses the real estimate u, and becomes greedy, exploiting what it has learned.",
+            "u is the estimated utility, which is greed. n is how many times the action has been tried, which drives curiosity. Picture a tourist in a new city with four restaurants and no ratings yet.",
+            "A simple version: if an action has been tried fewer than N e times, pretend it's worth R plus, an optimistic estimate of the best possible reward. So untried actions look attractive, and the agent tries every state-action pair at least N e times. The tourist tries every restaurant a couple of times before trusting any rating.",
+            "After that, it uses the real estimate u, and becomes greedy, exploiting what it has learned. The tourist keeps going back to the pizza place, the best one found.",
             "Deep Q-networks, or DQN, are Q-learning with a deep neural network approximating the Q function. That's what DeepMind used.",
             "Think of Q-learning as a tourist rating dishes at restaurants. After each meal, nudge the rating towards how good the meal was, plus how good the best next meal could be."] }
       ] },
