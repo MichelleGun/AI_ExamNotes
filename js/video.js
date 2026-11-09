@@ -56,6 +56,10 @@
   const words = s => s.replace(/<[^>]+>/g, "").split(/\s+/).filter(Boolean).length;
   const fmt = sec => { sec = Math.max(0, Math.round(sec)); return Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0"); };
   const plain = s => s.replace(/<[^>]+>/g, "");
+  const spoken = s => plain(s).replace(/→/g, " to ").replace(/×/g, " times ").replace(/≈/g, " approximately ").replace(/≤/g, " less than or equal to ").replace(/≥/g, " greater than or equal to ").replace(/¬/g, " not ");
+  const hashStr = s => { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0; return h.toString(36); };
+  // narration lines per scene ("ci.si"), as spoken. Recorded audio is matched to these by hash.
+  function sceneTexts(seq) { const o = {}; seq.forEach(x => { const key = x.ci + "." + x.si; (o[key] = o[key] || []).push(spoken(x.s)); }); Object.keys(o).forEach(k => { o[k] = { h: hashStr(o[k].join("|")), lines: o[k] }; }); return o; }
 
   function flatten(L) {
     const seq = []; let t = 0;
@@ -67,6 +71,7 @@
     })));
     return { seq, total: t };
   }
+  window.VK.narrationScenes = id => sceneTexts(flatten(VIDEO_LESSONS[id]).seq);
   window.lessonLength = id => { const L = VIDEO_LESSONS[id]; return L ? flatten(L).total : 0; };
 
   let current = null;
@@ -173,7 +178,6 @@
     function remember(done) { st.pos[id] = { i: done ? 0 : idx, done: done || (st.pos[id] && st.pos[id].done) || false }; saveSt(); }
     function clear() { clearTimeout(timer); clearTimeout(watchdog); timer = watchdog = null; }
     const sameScene = (a, b) => seq[a] && seq[b] && seq[a].ci === seq[b].ci && seq[a].si === seq[b].si;
-    const spoken = s => plain(s).replace(/→/g, " to ").replace(/×/g, " times ").replace(/≈/g, " approximately ").replace(/≤/g, " less than or equal to ").replace(/≥/g, " greater than or equal to ").replace(/¬/g, " not ");
     const rateNow = () => +st.set.rate || 1;
     let live = [], queued = new Set();
     // move on after entry i: pause briefly at scene changes (shorter at higher speed)
@@ -206,10 +210,34 @@
       u.onerror = ev => { fall.forEach(clearTimeout); if (my !== token || ev.error === "interrupted" || ev.error === "canceled") return; moveOn(e); };
       live.push(u); speechSynthesis.speak(u);
     }
+    // Recorded narration: audio/<id>/manifest.json maps "ci.si" to {f: file, h: text hash, t: [line start seconds]}.
+    // One <audio> element is reused for the whole lesson, so phones keep it unlocked after the first tap.
+    let man = null; const AU = new Audio(), AUN = new Audio(); AU.preload = "auto"; AUN.preload = "auto";
+    const texts = sceneTexts(seq), av = window.APP_V || "";
+    fetch("audio/" + id + "/manifest.json?v=" + av).then(r => r.ok ? r.json() : null).then(m => { man = m; }).catch(() => { });
+    const clipFor = i => { if (!man || !seq[i]) return null; const key = seq[i].ci + "." + seq[i].si, c = man[key]; return c && texts[key] && c.h === texts[key].h ? c : null; };
+    const clipUrl = c => "audio/" + id + "/" + c.f + "?v=" + av;
+    function playClip(c, my) {
+      try { if (hasTTS) speechSynthesis.cancel(); } catch (e) { }
+      let s0 = idx; while (s0 > 0 && sameScene(s0 - 1, idx)) s0--;
+      let e = idx; while (sameScene(e, e + 1)) e++;
+      const url = clipUrl(c), t0 = c.t[idx - s0] || 0;
+      if (AU.dataset.u !== url) { AU.src = url + (t0 ? "#t=" + t0.toFixed(2) : ""); AU.dataset.u = url; } else { try { AU.currentTime = t0; } catch (x) { } }
+      AU.defaultPlaybackRate = AU.playbackRate = rateNow();
+      AU.ontimeupdate = () => { if (my !== token) return; const t = AU.currentTime; let j = 0; while (j + 1 < c.t.length && c.t[j + 1] <= t + 0.05) j++; show(s0 + j); };
+      AU.onended = () => { if (my !== token || !playing) return; show(e); moveOn(e); };
+      AU.onerror = () => { if (my !== token || !playing) return; man = null; step(); };
+      const pr = AU.play();
+      if (pr && pr.catch) pr.catch(err => { if (my !== token) return; if (err && err.name === "NotAllowedError") pause(); else if (err && err.name !== "AbortError") { man = null; step(); } });
+      const nc = clipFor(e + 1); if (nc && AUN.dataset.u !== clipUrl(nc)) { AUN.src = clipUrl(nc); AUN.dataset.u = clipUrl(nc); }
+    }
     function step() {
       clear(); const my = ++token; render(idx);
       const x = seq[idx], rate = rateNow();
       R.style.setProperty("--vkr", rate);
+      const c = !st.set.muted && clipFor(idx);
+      if (c) { playClip(c, my); return; }
+      AU.pause();
       const v = !st.set.muted && pickVoice(st.set.voice);
       if (!v) { timer = setTimeout(() => { if (my === token) moveOn(idx); }, x.d / rate * 1000 + 150); return; }
       try { speechSynthesis.cancel(); } catch (e) { }
@@ -217,7 +245,7 @@
       queue(idx, my, v); arm(idx, groupEnd(idx), my);
     }
     function play() { if (current && current !== api) current.pause(); current = api; R.classList.add("started"); playing = true; playB.innerHTML = ICON.pause; playB.setAttribute("aria-label", "Pause"); step(); }
-    function pause() { playing = false; token++; clear(); if (hasTTS) try { speechSynthesis.cancel(); } catch (e) { } playB.innerHTML = ICON.play; playB.setAttribute("aria-label", "Play"); remember(); }
+    function pause() { playing = false; token++; clear(); AU.pause(); if (hasTTS) try { speechSynthesis.cancel(); } catch (e) { } playB.innerHTML = ICON.play; playB.setAttribute("aria-label", "Play"); remember(); }
     function finish() { pause(); remember(true); R.classList.add("ended"); cap.textContent = "Lesson complete. Now test yourself with the quiz and flashcards for this week."; if (window.toast) toast("Lesson finished"); }
     function seek(i) { idx = Math.max(0, Math.min(seq.length - 1, i)); R.classList.add("started"); R.classList.remove("ended"); if (playing) step(); else { render(idx); remember(); } }
     function sceneJump(dir) { const x = seq[idx]; let j = idx; if (dir < 0) { j = seq.findIndex(y => y.ci === x.ci && y.si === x.si); if (idx - j < 2 && j > 0) { const p = seq[j - 1]; j = seq.findIndex(y => y.ci === p.ci && y.si === p.si); } } else { while (j < seq.length && seq[j].ci === x.ci && seq[j].si === x.si) j++; } seek(j); }
@@ -229,7 +257,7 @@
     q(".vk-prev").onclick = () => sceneJump(-1); q(".vk-next").onclick = () => sceneJump(1);
     q(".vk-mute").onclick = e => { st.set.muted = !st.set.muted; saveSt(); e.currentTarget.innerHTML = st.set.muted ? ICON.mute : ICON.vol; if (playing) step(); };
     q(".vk-cc").onclick = e => { st.set.cc = !st.set.cc; saveSt(); e.currentTarget.classList.toggle("on", st.set.cc); R.classList.toggle("nocc", !st.set.cc); };
-    q(".vk-rate").onchange = e => { st.set.rate = +e.target.value; saveSt(); if (playing) step(); };
+    q(".vk-rate").onchange = e => { st.set.rate = +e.target.value; saveSt(); if (!playing) return; if (AU.dataset.u && !AU.paused) { AU.defaultPlaybackRate = AU.playbackRate = rateNow(); R.style.setProperty("--vkr", rateNow()); } else step(); };
     q(".vk-voice").onchange = e => { st.set.voice = e.target.value; saveSt(); if (playing) step(); };
     q(".vk-fs").onclick = () => { const el = R; if (document.fullscreenElement) document.exitFullscreen(); else if (el.requestFullscreen) el.requestFullscreen(); else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen(); };
     R.querySelectorAll(".vk-chs a").forEach(a => a.onclick = () => seek(seq.findIndex(x => x.ci === +a.dataset.ci)));
