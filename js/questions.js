@@ -21,7 +21,11 @@ l2: [
 {t:"match", q:"Match each performance measure with its meaning.", pairs:[["Completeness","Finds a solution if one exists"],["Cost optimality","Finds the lowest-cost solution"],["Time complexity","Computation needed"],["Space complexity","Memory needed"]], e:""},
 {t:"mcq", q:"What is path cost?", o:["Number of nodes expanded","Sum of step costs from start to the node","Heuristic value at the node","Depth of the node"], a:1, e:"Path cost = sum of step costs."},
 {t:"fill", q:"When UCS removes Bucharest from the frontier with the cheapest route (via Sibiu, Rimnicu Vilcea, Pitesti), f(Bucharest) = ___.", a:[{n:418,tol:0}], e:"140 + 80 + 97 + 101 = 418."},
-{t:"tf", q:"A graph search algorithm does not expand a state it has already expanded.", a:true, e:"That is what separates graph search from tree search."}
+{t:"tf", q:"A graph search algorithm does not expand a state it has already expanded.", a:true, e:"That is what separates graph search from tree search."},
+{t:"fill", q:"Greedy best-first: h(Arad) = 366. f(Arad) = ___.", a:[{n:366,tol:0}], e:"For greedy, f(n) = h(n), so f(Arad) = 366."},
+{t:"mcq", q:"Greedy best-first from Arad: h(Sibiu) = 253, h(Timisoara) = 329, h(Zerind) = 374. Which is expanded next?", o:["Zerind","Timisoara","Sibiu","Arad again"], a:2, e:"Greedy picks the lowest h: Sibiu (253)."},
+{t:"fill", q:"Greedy, after expanding Sibiu: h(Fagaras) = 176, h(Rimnicu Vilcea) = 193, h(Oradea) = 380. The next node is ___ because its f-value is ___.", a:[["Fagaras","Făgăraș"],{n:176,tol:0}], e:"Lowest h is Fagaras with 176."},
+{t:"fill", q:"A* optimal route: Arad → Sibiu → ___ → ___ → Bucharest. Total cost = ___.", a:[["Rimnicu Vilcea","Râmnicu Vâlcea","Rimnicu","Ramnicu Vilcea","Ramnicu Valcea","Rimnicu Valcea"],["Pitesti","Pitești"],{n:418,tol:0}], e:"140 + 80 + 97 + 101 = 418 via Rimnicu Vilcea and Pitesti."}
 ],
 l3: [
 {t:"tf", q:"In a local search problem we care about the path to the best state.", a:false, e:"We only care about the final state (the optimal solution)."},
@@ -59,7 +63,10 @@ l4: [
 {t:"mcq", q:"Gradient boosting final prediction is:", o:["Majority vote of independent trees","Sum of sequential tree contributions","Only the last tree","Average of random features"], a:1, e:""},
 {t:"fill", q:"TP = 40, FP = 10, FN = 20. Precision = ___ (2 d.p.).", a:[{n:0.8,tol:0.005}], e:"40 / (40 + 10) = 0.80."},
 {t:"match", q:"Match the algorithm to its split criterion.", pairs:[["ID3","Information gain"],["C4.5","Gain ratio + pruning"],["CART","Gini index, binary splits"]], e:""},
-{t:"tf", q:"Logistic regression is used for classification.", a:true, e:"It outputs a probability via the sigmoid."}
+{t:"tf", q:"Logistic regression is used for classification.", a:true, e:"It outputs a probability via the sigmoid."},
+{t:"fill", q:"Restaurant data (6+, 6-): splitting on Type (French 1+/1-, Italian 1+/1-, Thai 2+/2-, Burger 2+/2-). IG(Type) = ___ bits.", a:[{n:0,tol:0.0001}], e:"Every child is 50/50 (H = 1), so remainder = 1 and IG = 0."},
+{t:"fill", q:"Restaurant data: Gini(parent) = 0.5. After splitting on Patrons, the weighted child Gini = ___ and the Gini reduction = ___ (4 d.p.).", a:[{n:0.2222,tol:0.0002},{n:0.2778,tol:0.0002}], e:"Weighted Gini = 6/12 × 0.4444 = 0.2222. Reduction = 0.5 - 0.2222 = 0.2778."},
+{t:"mcq", q:"Type: IG = 0, weighted Gini 0.5. Patrons: IG = 0.5409, weighted Gini 0.2222. Which attribute is chosen for the split?", o:["Type by both measures","Patrons by both measures","Patrons by IG, Type by Gini","Type by IG, Patrons by Gini"], a:1, e:"Pick the largest IG and the lowest weighted Gini: Patrons both times."}
 ],
 l5: [
 {t:"mcq", q:"Which network type is used for time series forecasting in this course?", o:["Perceptron","CNN","RNN","Decision tree"], a:2, e:""},
