@@ -1005,3 +1005,16 @@ svg .hk circle{fill:var(--fr)} svg .hk path{stroke:var(--fr);stroke-width:2.6;st
 .sh9.s0{color:#f97316}.sh9.s1{color:#3b82f6}.sh9.s2{color:#16a34a}.sh9.s3{color:#db2777}.sh9.s4{color:#7c3aed}
 @media(max-width:640px){.dgv9,.pcv9{max-height:24cqw}.an9{height:12cqw;margin-bottom:3cqw}.an9 span{font-size:1.7cqw;bottom:-2.6cqw}.an9 .th9 span{font-size:1.8cqw;top:-2.6cqw}.rp9{max-height:20cqw}.vk-stg .sh9{font-size:4.4cqw}}
 .dgv9,.pcv9{max-height:10cqw}.rp9{max-height:9cqw}.an9 .th9 span{right:auto;left:0}
+@media(max-width:640px){.dgv9,.pcv9{max-height:22cqw}.rp9{max-height:18cqw}}
+
+/* quiz context figures */
+.qfig{margin:0 0 14px;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--panel2)}
+.qfig svg{display:block;width:100%;height:auto;max-height:360px;margin:0 auto}
+svg.diagram text.sm{font-size:12px}
+svg.diagram text.bold,svg.diagram .bold{font-weight:700}
+svg.diagram text.wq{fill:#fff;font-size:11px;font-weight:700}
+@media (max-width:600px){.qfig{padding:6px}.qfig svg{max-height:300px}}
+.qfig.wide{overflow-x:auto}
+@media (max-width:600px){.qfig.wide svg{min-width:420px;max-height:none}}
+.qfig-hint{display:none;font-size:.8rem;color:var(--muted);margin:-8px 0 12px}
+@media (max-width:600px){.qfig-hint{display:block}}

@@ -222,7 +222,7 @@
       }
       const tl = topicById(q.tp);
       wrap.innerHTML = `<div class="qmeta"><span>Question ${i + 1} / ${qs.length}</span><span>${tl ? "L" + tl.num : ""} ${q.type === "gen" ? "· calculation" : "· " + ({ mcq: "multiple choice", multi: "multiple answers", tf: "true / false", fill: "fill in the blank", match: "matching" }[q.t])}</span><span>Score ${right}</span></div>
-        <div class="qcard">${body}<div class="fb"></div><div class="qbtns"><button class="btn check">Check</button><button class="btn ghost nextq" hidden>Next →</button></div></div>`;
+        <div class="qcard">${window.qfigHTML ? qfigHTML(q) : ""}${body}<div class="fb"></div><div class="qbtns"><button class="btn check">Check</button><button class="btn ghost nextq" hidden>Next →</button></div></div>`;
       const sel = new Set();
       $$(".opt", wrap).forEach(b => b.onclick = () => { if (answered) return; const k = +b.dataset.k; if (q.t === "multi") { sel.has(k) ? sel.delete(k) : sel.add(k); b.classList.toggle("sel"); } else { sel.clear(); sel.add(k); $$(".opt", wrap).forEach(x => x.classList.remove("sel")); b.classList.add("sel"); check(); } });
       $(".check", wrap).onclick = check;
