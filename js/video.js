@@ -107,7 +107,7 @@
         <span class="vk-time">0:00 / ${fmt(total)}</span><span class="vk-chn"></span>
         <span class="vk-sp"></span>
         <button class="vk-b vk-cc ${st.set.cc ? "on" : ""}" aria-label="Captions">${ICON.cc}</button>
-        <select class="vk-rate" aria-label="Speed">${[0.75, 0.9, 1, 1.15, 1.25, 1.5, 1.75, 2].map(r => `<option value="${r}" ${r == st.set.rate ? "selected" : ""}>${r}×</option>`).join("")}</select>
+        <select class="vk-rate" aria-label="Speed">${[0.75, 0.9, 1, 1.15, 1.25, 1.5, 1.75, 2, 2.5, 3, 4].map(r => `<option value="${r}" ${r == st.set.rate ? "selected" : ""}>${r}×</option>`).join("")}</select>
         <button class="vk-b vk-fs" aria-label="Fullscreen">${ICON.full}</button>
       </div>
       <details class="vk-more"><summary>Chapters and voice</summary>
