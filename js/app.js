@@ -458,7 +458,7 @@
   if (!S.onb) S.onb = {};
   const tourLink = document.createElement("a"); tourLink.href = "javascript:void(0)"; tourLink.textContent = "Site tour"; tourLink.onclick = () => { document.body.classList.remove("navopen"); openTour(0); };
   const fbLink = document.createElement("a"); fbLink.href = "javascript:void(0)"; fbLink.textContent = "Send feedback"; fbLink.onclick = () => { document.body.classList.remove("navopen"); openFeedback(); };
-  const navh = $(".nav.side .navh"); if (navh) { navh.before(tourLink); navh.before(fbLink); }
+  const navmore = $("#navmore"); if (navmore) { navmore.append(tourLink); navmore.append(fbLink); }
   renderPoints(); route();
   let tourShown = false; const showOnce = () => { if (!tourShown) { tourShown = true; maybeTour(); } };
   setTimeout(showOnce, 4000);
