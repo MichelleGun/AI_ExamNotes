@@ -130,7 +130,7 @@
     const [, page = "", a = "", b = ""] = (location.hash || "#/").split("/");
     $$(".nav a").forEach(x => x.classList.toggle("on", x.getAttribute("href").split("/")[1] === page));
     window.scrollTo(0, 0);
-    ({ "": home, topic: topicPage, topics: topicsList, cards: cardsPage, quiz: quizPage, practice: practicePage, tools: toolsPage, sheet: sheetPage, notes: notesPage, board: boardPage }[page] || home)(a || undefined, b || undefined);
+    ({ "": home, topic: topicPage, topics: topicsList, cards: cardsPage, quiz: quizPage, practice: practicePage, tools: toolsPage, sheet: sheetPage, calc: calcPage, notes: notesPage, board: boardPage }[page] || home)(a || undefined, b || undefined);
     WIDGETS.mount(main);
   }
   window.addEventListener("hashchange", route);
@@ -139,7 +139,7 @@
     const totalCards = Object.values(CARDS).reduce((s, a) => s + a.length, 0), totalQ = Object.values(QUESTIONS).reduce((s, a) => s + a.length, 0);
     main.innerHTML = `<section class="hero"><h1>AI Final Exam Revision</h1><p>Lectures 2 to 12 (Module 1 not examined). 120 minutes: MCQ, multiple answers, true/false, fill in blanks, matching. Bring a calculator and hard-copy notes.</p>
       <div class="stats"><div><b class="pts">${S.points}</b><span>points</span></div><div><b class="streak">${S.streak.days}</b><span>day streak</span></div><div><b>${Object.keys(S.box).filter(k => S.box[k] >= 3).length}/${totalCards}</b><span>cards mastered</span></div></div>
-      <div class="cta"><a class="btn" href="#/quiz/mixed">Start a mixed exam quiz</a><a class="btn ghost" href="#/practice">Practise calculations</a><a class="btn ghost" href="#/sheet">Printable cheat sheet</a></div></section>
+      <div class="cta"><a class="btn" href="#/quiz/mixed">Start a mixed exam quiz</a><a class="btn ghost" href="#/practice">Practise calculations</a><a class="btn ghost" href="#/sheet">Printable cheat sheet</a><a class="btn ghost" href="#/calc">Calc cheat sheet</a></div></section>
       <h2>Topics</h2><div class="grid">${TOP.map(t => { const s = stat(t.id); const pc = s.total ? Math.round(100 * s.right / s.total) : 0; return `<a class="tcard" href="#/topic/${t.id}"><span class="tn">L${t.num}</span><b>${t.title}</b><small>${t.sub}</small><div class="prog"><span style="width:${pc}%"></span></div><small class="muted">Quiz accuracy ${s.total ? pc + "%" : "not started"}</small></a>`; }).join("")}</div>
       <h2>Exam calculation checklist</h2><div class="checklist">${[["Search evaluation functions (UCS, Greedy, A*)", "l2", "astar"], ["Loss functions (squared error)", "l4", "sse"], ["Q-functions and utility functions", "l6", "qvalue"], ["Entropy, information gain, Gini", "l4", "ig"], ["Probability, conditional probability, Naive Bayes, BN", "l11", "bayes"], ["Convolution, pooling, receptive field, parameter count", "l7", "convsize"], ["IoU and non-max suppression", "l7", "iou"], ["Simple RNN hidden-state update", "l8", "rnn"], ["Attention: weighted value aggregation", "l8", "attn"]].map(([n, t, g]) => `<a href="#/practice/${g}" class="chk">${n}<span>Practise →</span></a>`).join("")}</div>
       <p class="muted small">${totalCards} flashcards, ${totalQ} bank questions, ${GENERATORS.length} unlimited calculation generators, 13 interactive tools.</p>`;
@@ -305,8 +305,22 @@
   // ---------- Cheat sheet ----------
   function sheetHTML() { return window.CHEATSHEET; }
   function sheetPage() {
-    main.innerHTML = `<div class="nh"><h1>Cheat sheet (all formulas)</h1><button class="btn" id="psheet">Print / Save as PDF</button></div><p class="muted">Bring this as your hard-copy notes. Print it double-sided on A4.</p><div class="sheet">${sheetHTML()}</div>`;
+    main.innerHTML = `<div class="nh"><h1>Cheat sheet (all formulas)</h1><button class="btn" id="psheet">Print / Save as PDF</button></div><p class="muted">Bring this as your hard-copy notes. Print it double-sided on A4. For worked calculations, see the <a href="#/calc">calc cheat sheet</a>.</p><div class="sheet">${sheetHTML()}</div>`;
     $("#psheet").onclick = () => printDoc("AI Exam Cheat Sheet", `<div class="sheet">${sheetHTML()}</div>`);
+  }
+
+  // ---------- Calc cheat sheet (worked examples, colour-coded) ----------
+  function calcPage(v) {
+    const ver = v === "q" ? "q" : "w", file = ver === "q" ? "v2" : "v1";
+    const pdf = ver === "q" ? "AI-calc-cheatsheet-with-questions.pdf" : "AI-calc-cheatsheet-working.pdf";
+    main.innerHTML = `<div class="nh"><h1>Calc cheat sheet</h1><a class="btn" href="calcsheet/${pdf}?v=${window.APP_V}" download>Download PDF</a></div>
+      <p class="muted">Every calculation type, worked step by step. Same colour = same number, so swap in the numbers from your question by colour. Yellow = worked out, red = careful.</p>
+      <div class="cta" style="margin:8px 0 12px"><a class="btn ${ver === "w" ? "" : "ghost"}" href="#/calc">Working only</a><a class="btn ${ver === "q" ? "" : "ghost"}" href="#/calc/q">With example questions</a></div>
+      <iframe id="calcf" title="Calc cheat sheet" src="calcsheet/${file}.html?v=${window.APP_V}" style="width:100%;border:1px solid var(--line, #ddd);border-radius:10px;background:#fff;min-height:70vh"></iframe>`;
+    const f = $("#calcf");
+    const fit = () => { try { f.style.height = f.contentDocument.documentElement.scrollHeight + 20 + "px"; } catch (e) {} };
+    f.onload = () => { fit(); setTimeout(fit, 400); };
+    window.onresize = fit;
   }
 
   // ---------- My notes ----------
