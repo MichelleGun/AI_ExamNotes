@@ -124,6 +124,10 @@
   setTheme(th || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
   $("#theme").onclick = () => setTheme(document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark");
 
+  const getPref = (k, d) => { try { return localStorage.getItem("pref_" + k) || d; } catch (e) { return d; } };
+  const setPref = (k, v) => { try { localStorage.setItem("pref_" + k, v); } catch (e) {} };
+  const orderToggle = ord => `<button class="btn ghost small ordt" title="Switch question order">${ord === "shuffle" ? "⇄ Shuffled" : "↓ In order"}</button>`;
+
   // ---------- Pages ----------
   const main = $("#main");
   function route() {
@@ -139,7 +143,7 @@
     const totalCards = Object.values(CARDS).reduce((s, a) => s + a.length, 0), totalQ = Object.values(QUESTIONS).reduce((s, a) => s + a.length, 0);
     main.innerHTML = `<section class="hero"><h1>AI Final Exam Revision</h1><p>Lectures 2 to 12 (Module 1 not examined). 120 minutes: MCQ, multiple answers, true/false, fill in blanks, matching. Bring a calculator and hard-copy notes.</p>
       <div class="stats"><div><b class="pts">${S.points}</b><span>points</span></div><div><b class="streak">${S.streak.days}</b><span>day streak</span></div><div><b>${Object.keys(S.box).filter(k => S.box[k] >= 3).length}/${totalCards}</b><span>cards mastered</span></div></div>
-      <div class="cta"><a class="btn" href="#/quiz/mixed">Start a mixed exam quiz</a><a class="btn ghost" href="#/practice">Practise calculations</a><a class="btn ghost" href="#/sheet">Printable cheat sheet</a><a class="btn ghost" href="#/calc">Calc cheat sheet</a></div></section>
+      <div class="cta"><a class="btn" href="#/quiz/mixed">Start a mixed exam quiz</a><a class="btn ghost" href="#/practice">Practise calculations</a><a class="btn ghost" href="#/calc">Calc cheat sheet</a></div></section>
       <h2>Topics</h2><div class="grid">${TOP.map(t => { const s = stat(t.id); const pc = s.total ? Math.round(100 * s.right / s.total) : 0; return `<a class="tcard" href="#/topic/${t.id}"><span class="tn">L${t.num}</span><b>${t.title}</b><small>${t.sub}</small><div class="prog"><span style="width:${pc}%"></span></div><small class="muted">Quiz accuracy ${s.total ? pc + "%" : "not started"}</small></a>`; }).join("")}</div>
       <h2>Exam calculation checklist</h2><div class="checklist">${[["Search evaluation functions (UCS, Greedy, A*)", "l2", "astar"], ["Loss functions (squared error)", "l4", "sse"], ["Q-functions and utility functions", "l6", "qvalue"], ["Entropy, information gain, Gini", "l4", "ig"], ["Probability, conditional probability, Naive Bayes, BN", "l11", "bayes"], ["Convolution, pooling, receptive field, parameter count", "l7", "convsize"], ["IoU and non-max suppression", "l7", "iou"], ["Simple RNN hidden-state update", "l8", "rnn"], ["Attention: weighted value aggregation", "l8", "attn"]].map(([n, t, g]) => `<a href="#/practice/${g}" class="chk">${n}<span>Practise →</span></a>`).join("")}</div>
       <p class="muted small">${totalCards} flashcards, ${totalQ} bank questions, ${GENERATORS.length} unlimited calculation generators, 13 interactive tools.</p>`;
@@ -169,10 +173,13 @@
     Object.entries(CARDS).forEach(([t, arr]) => { if (tid === "all" || tid === t) arr.forEach((c, i) => list.push({ id: t + "-" + i, t, f: c[0], b: c[1] })); });
     if (mode === "saved") list = list.filter(c => S.saved.cards.includes(c.id));
     if (mode === "weak") list = list.filter(c => (S.box[c.id] || 0) < 3);
-    list = mode === "order" ? list : shuffle(list).sort((a, b) => (S.box[a.id] || 0) - (S.box[b.id] || 0));
+    const ord = getPref("cardOrder", "shuffle");
+    if (ord === "shuffle") list = shuffle(list);
+    if (mode === "all") list = list.slice().sort((a, b) => (S.box[a.id] || 0) - (S.box[b.id] || 0));
     let i = 0;
-    main.innerHTML = `<h1>Flashcards</h1><div class="row">${topicSelect(tid)}<select class="msel"><option value="all">Weakest first</option><option value="weak" ${mode === "weak" ? "selected" : ""}>Not mastered only</option><option value="saved" ${mode === "saved" ? "selected" : ""}>My saved cards</option><option value="order" ${mode === "order" ? "selected" : ""}>Lecture order</option></select></div>
-      <div class="fcwrap"></div><p class="small muted">Tap the card to flip. Keys: space = flip, 1 = again, 2 = got it, S = save.</p>`;
+    main.innerHTML = `<h1>Flashcards</h1><div class="row">${topicSelect(tid)}<select class="msel"><option value="every" ${mode === "every" || mode === "order" ? "selected" : ""}>All cards</option><option value="all" ${mode === "all" ? "selected" : ""}>Weakest first</option><option value="weak" ${mode === "weak" ? "selected" : ""}>Not mastered only</option><option value="saved" ${mode === "saved" ? "selected" : ""}>My saved cards</option></select>${orderToggle(ord)}</div>
+      <div class="fcwrap"></div><p class="small muted">Tap the card to flip. Keys: space = flip, ← back, → next, 1 = again, 2 = got it, S = save.</p>`;
+    $(".ordt").onclick = () => { setPref("cardOrder", ord === "shuffle" ? "order" : "shuffle"); cardsPage(tid, mode); };
     $(".tsel").onchange = e => location.hash = `#/cards/${e.target.value}/${$(".msel").value}`;
     $(".msel").onchange = e => location.hash = `#/cards/${$(".tsel").value}/${e.target.value}`;
     const wrap = $(".fcwrap");
@@ -180,15 +187,18 @@
       if (!list.length) { wrap.innerHTML = `<div class="empty">No cards here. ${mode === "saved" ? "Save cards with the star button." : "All mastered! Try another mode."}</div>`; return; }
       const c = list[i % list.length]; const sv = S.saved.cards.includes(c.id); const bx = S.box[c.id] || 0;
       wrap.innerHTML = `<div class="fcmeta"><span>${(i % list.length) + 1} / ${list.length}</span><span>L${topicById(c.t).num}</span><span>Level ${bx}/5</span></div>
+        <div class="fcnav"><button class="btn ghost small fcprev" ${i === 0 ? "disabled" : ""}>← Back</button><button class="btn ghost small fcnext">Next →</button></div>
         <div class="flash" tabindex="0"><div class="inner"><div class="face front">${esc(c.f)}</div><div class="face back"><div>${esc(c.b)}</div>${(window.CARD_FIGS || {})[c.id] && SVG[CARD_FIGS[c.id]] ? `<div class="cfig">${SVG[CARD_FIGS[c.id]]}</div>` : ""}</div></div></div>
         <div class="fcbtns"><button class="btn ghost again">Again</button><button class="btn star ${sv ? "on" : ""}" title="Save card">${sv ? "★ Saved" : "☆ Save"}</button><button class="btn good">Got it</button></div>`;
+      $(".fcprev", wrap).onclick = () => { if (i > 0) { i--; show(); } };
+      $(".fcnext", wrap).onclick = () => next();
       const fl = $(".flash", wrap); fl.onclick = () => fl.classList.toggle("flip");
       $(".again", wrap).onclick = () => { S.box[c.id] = Math.max(0, bx - 1); stat(c.t).cards++; award(0); next(); };
       $(".good", wrap).onclick = () => { S.box[c.id] = Math.min(5, bx + 1); stat(c.t).cards++; award(1, "c"); next(); };
       $(".star", wrap).onclick = () => { const k = S.saved.cards.indexOf(c.id); if (k >= 0) S.saved.cards.splice(k, 1); else S.saved.cards.push(c.id); save(); show(); };
     }
     function next() { i++; show(); }
-    document.onkeydown = e => { if (!$(".flash")) return; if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return; if (e.key === " ") { e.preventDefault(); $(".flash").classList.toggle("flip"); } if (e.key === "1") $(".again").click(); if (e.key === "2") $(".good").click(); if (e.key.toLowerCase() === "s") $(".star").click(); };
+    document.onkeydown = e => { if (!$(".flash")) return; if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return; if (e.key === " ") { e.preventDefault(); $(".flash").classList.toggle("flip"); } if (e.key === "ArrowLeft") $(".fcprev").click(); if (e.key === "ArrowRight") $(".fcnext").click(); if (e.key === "1") $(".again").click(); if (e.key === "2") $(".good").click(); if (e.key.toLowerCase() === "s") $(".star").click(); };
     show();
   }
 
@@ -197,11 +207,14 @@
   function quizPage(tid = "mixed") {
     let pool = [];
     Object.entries(QUESTIONS).forEach(([t, arr]) => { if (tid === "mixed" || tid === "all" || tid === t) arr.forEach((q, i) => pool.push({ ...q, tp: t, id: t + "-" + i })); });
+    const ord = getPref("quizOrder", "shuffle"), tnum = t => (topicById(t) || { num: 99 }).num;
     let qs = shuffle(pool);
     if (tid === "mixed") { qs = qs.slice(0, 16); const gens = shuffle(GENERATORS).slice(0, 4); gens.forEach(g => { const x = g.make(rng); qs.push({ tp: g.topic, gen: true, type: "gen", ...x }); }); qs = shuffle(qs); }
+    if (ord === "order") { const pos = q => q.id ? +q.id.split("-")[1] : 999; qs = (tid === "mixed" ? qs : pool).slice().sort((a, b) => tnum(a.tp) - tnum(b.tp) || pos(a) - pos(b)); }
     let i = 0, right = 0, answered = false;
-    main.innerHTML = `<h1>Quiz</h1><div class="row"><select class="tsel"><option value="mixed">Mixed exam (20 Qs incl. calculations)</option><option value="all" ${tid === "all" ? "selected" : ""}>All bank questions</option>${TOP.map(t => `<option value="${t.id}" ${tid === t.id ? "selected" : ""}>L${t.num} ${t.title}</option>`).join("")}</select></div><div class="qwrap"></div>`;
+    main.innerHTML = `<h1>Quiz</h1><div class="row"><select class="tsel"><option value="mixed">Mixed exam (20 Qs incl. calculations)</option><option value="all" ${tid === "all" ? "selected" : ""}>All bank questions</option>${TOP.map(t => `<option value="${t.id}" ${tid === t.id ? "selected" : ""}>L${t.num} ${t.title}</option>`).join("")}</select>${orderToggle(ord)}</div><div class="qwrap"></div>`;
     $(".tsel").onchange = e => location.hash = "#/quiz/" + e.target.value;
+    $(".ordt").onclick = () => { setPref("quizOrder", ord === "shuffle" ? "order" : "shuffle"); quizPage(tid); };
     const wrap = $(".qwrap");
     function show() {
       if (i >= qs.length) {

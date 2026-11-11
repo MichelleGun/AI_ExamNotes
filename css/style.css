@@ -1037,3 +1037,7 @@ svg.diagram text.wq{fill:#fff;font-size:11px;font-weight:700}
 .g-l1{--g:#0d9488}.g-l2{--g:#2563eb}.g-l3{--g:#d97706}.g-l4{--g:#7c3aed}.g-l5{--g:#db2777}
 :root[data-theme="dark"] .g-prac{--g:#4ade80}:root[data-theme="dark"] .g-sheet{--g:#fb923c}:root[data-theme="dark"] .g-learn{--g:#60a5fa}:root[data-theme="dark"] .g-more{--g:#a78bfa}
 :root[data-theme="dark"] .g-l1{--g:#2dd4bf}:root[data-theme="dark"] .g-l2{--g:#60a5fa}:root[data-theme="dark"] .g-l3{--g:#fbbf24}:root[data-theme="dark"] .g-l4{--g:#a78bfa}:root[data-theme="dark"] .g-l5{--g:#f472b6}
+
+.fcnav{display:flex;justify-content:space-between;gap:10px;margin:0 0 8px}
+.fcnav .btn[disabled]{opacity:.4;cursor:default}
+.row .ordt{white-space:nowrap}
