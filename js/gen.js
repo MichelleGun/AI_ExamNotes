@@ -206,6 +206,61 @@ window.makeRng = function (seed) {
           `New Q = ${Q} + ${a} × ${rd(R + g * mq - Q)} = ${Q} + ${rd(a * (R + g * mq - Q))} = <b>${rd(nq)}</b>.`],
           "α multiplies only the ERROR, not the whole target. The new value moves a fraction α of the way from old to target.") };
   }},
+  { id: "sarsa", topic: "l6", name: "SARSA vs Q-learning update (Q(s,a))", make(r) {
+      const Q = rd(r() * 2, 2), R = pick(r, [-1, 0, 1, 2]), g = pick(r, [0.9, 0.8, 0.5]), a = pick(r, [0.1, 0.2, 0.5]);
+      const mq = rd(0.5 + r() * 2, 2), tq = rd(mq - 0.2 - r() * 0.8, 2);
+      const ts = R + g * tq, tq2 = R + g * mq, ns = Q + a * (ts - Q), nq = Q + a * (tq2 - Q);
+      return { q: `Q(s,a) = ${Q}, reward r = ${R}, γ = ${g}, α = ${a}. In s′ the agent actually takes a′ with Q(s′,a′) = ${tq}, but the best action in s′ has Q = ${mq}. Find the new Q(s,a) with SARSA and with Q-learning (4 d.p.).`,
+        labels: ["SARSA", "Q-learning"], answers: [N(rd(ns), 0.0006), N(rd(nq), 0.0006)],
+        steps: ST([
+          `Both use Q(s,a) ← Q(s,a) + α [r + γ·Q(next) − Q(s,a)]. Only Q(next) is different.`,
+          `SARSA (on-policy) uses the action it TOOK: Q(next) = ${tq}. Target = ${R} + ${g}×${tq} = ${rd(ts)}. Error = ${rd(ts)} − ${Q} = ${rd(ts - Q)}.`,
+          `SARSA new Q = ${Q} + ${a}×${rd(ts - Q)} = <b>${rd(ns)}</b>.`,
+          `Q-learning (off-policy) uses the BEST action: Q(next) = ${mq}. Target = ${R} + ${g}×${mq} = ${rd(tq2)}. Error = ${rd(tq2)} − ${Q} = ${rd(tq2 - Q)}.`,
+          `Q-learning new Q = ${Q} + ${a}×${rd(tq2 - Q)} = <b>${rd(nq)}</b>.`],
+          "SARSA = State, Action, Reward, State, Action: it needs the NEXT action actually chosen. Q-learning always takes the max.") };
+  }},
+  { id: "qtable", topic: "l6", name: "Q-table: V(s), greedy action, ε-greedy probabilities", make(r) {
+      const acts = ["Up", "Down", "Left", "Right"]; const qv = acts.map(() => rd(r() * 2 - 0.5, 2));
+      const best = qv.indexOf(Math.max(...qv)); const eps = pick(r, [0.1, 0.2, 0.3, 0.4]); const n = 4;
+      const pg = 1 - eps + eps / n, po = eps / n;
+      return { q: `Q-table row for state s: ${acts.map((x, k) => `Q(s,${x}) = ${qv[k]}`).join(", ")}. Find V(s). Then with ε-greedy, ε = ${eps} (the random pick is over all 4 actions), find P(greedy action) and P(one specific other action).`,
+        labels: ["V(s)", "P(greedy)", "P(other)"], answers: [N(qv[best], 0.0006), N(rd(pg), 0.0006), N(rd(po), 0.0006)],
+        steps: ST([
+          `V(s) = max over a of Q(s,a). Biggest of ${qv.join(", ")} is <b>${qv[best]}</b>, so the greedy action is <b>${acts[best]}</b> (argmax).`,
+          `ε-greedy: with prob 1 − ε = ${rd(1 - eps)} take the greedy action. With prob ε = ${eps} pick at random, each action getting ε/4 = ${rd(po)}.`,
+          `P(greedy) = ${rd(1 - eps)} + ${rd(po)} = <b>${rd(pg)}</b>.`,
+          `P(one other action) = ε/4 = <b>${rd(po)}</b>. Check: ${rd(pg)} + 3×${rd(po)} = 1.`],
+          "max = the value V(s), argmax = the action. If the random pick excludes the greedy action, use 1 − ε and ε/3 instead.") };
+  }},
+  { id: "qstoch", topic: "l6", name: "Q(s,a) with transition rewards: compare two actions", make(r) {
+      const g = pick(r, [0.9, 0.8, 1]);
+      const mk = () => { const p = pick(r, [0.6, 0.7, 0.8]); return [[p, ri(r, -2, 3), ri(r, 0, 10)], [rd(1 - p, 1), ri(r, -3, 1), ri(r, 0, 10)]]; };
+      const A = mk(), B = mk(); const q = o => o.reduce((s, [p, R, V]) => s + p * (R + g * V), 0);
+      const qa = q(A), qb = q(B); const desc = o => o.map(([p, R, V], k) => `${p} → s${k + 1} (R = ${R}, V = ${V})`).join(", ");
+      const line = o => o.map(([p, R, V]) => `${p}(${R} + ${g}×${V}) = ${p}×${rd(R + g * V)} = ${rd(p * (R + g * V))}`).join("; ");
+      return { q: `γ = ${g}. Action a1: ${desc(A)}. Action a2: ${desc(B)}. Use Q(s,a) = Σ P(s′)[R + γV(s′)]. Find Q(s,a1) and Q(s,a2) (4 d.p.). Which action is optimal?`,
+        labels: ["Q(s,a1)", "Q(s,a2)"], answers: [N(rd(qa), 0.0006), N(rd(qb), 0.0006)],
+        steps: ST([
+          `One bracket per outcome: P × (R + γ·V(s′)), then add.`,
+          `a1: ${line(A)}. Sum = <b>${rd(qa)}</b>.`,
+          `a2: ${line(B)}. Sum = <b>${rd(qb)}</b>.`,
+          `Optimal action = argmax → <b>${qa >= qb ? "a1" : "a2"}</b>, and V(s) = ${rd(Math.max(qa, qb))}.`],
+          "the reward is inside the bracket, so it is weighted by P too. γ only multiplies V(s′).") };
+  }},
+  { id: "qchain", topic: "l6", name: "Q-learning over episodes (values flow backwards)", make(r) {
+      const R = pick(r, [10, 5, 8, 4]), a = pick(r, [0.5, 0.2, 0.1]), g = pick(r, [1, 0.9, 0.5]);
+      const b1 = a * R, a2 = a * (g * b1), b2 = b1 + a * (R - b1);
+      return { q: `All Q values start at 0. α = ${a}, γ = ${g}. Every episode: A --right, r = 0--> B --right, r = +${R}--> Goal (terminal). Update in the order visited. Find Q(B,right) after episode 1, then Q(A,right) and Q(B,right) after episode 2 (4 d.p.).`,
+        labels: ["Q(B,right) ep 1", "Q(A,right) ep 2", "Q(B,right) ep 2"], answers: [N(rd(b1), 0.0006), N(rd(a2), 0.0006), N(rd(b2), 0.0006)],
+        steps: ST([
+          `Rule: Q ← Q + α [r + γ max Q(next) − Q]. After a terminal state, max Q(next) = 0.`,
+          `Ep 1, (A,right): target = 0 + ${g}×max Q(B,·) = 0 + ${g}×0 = 0, so Q(A,right) stays 0.`,
+          `Ep 1, (B,right): target = ${R} (terminal). Q = 0 + ${a}(${R} − 0) = <b>${rd(b1)}</b>.`,
+          `Ep 2, (A,right): now max Q(B,·) = ${rd(b1)}. Target = 0 + ${g}×${rd(b1)} = ${rd(g * b1)}. Q = 0 + ${a}(${rd(g * b1)} − 0) = <b>${rd(a2)}</b>.`,
+          `Ep 2, (B,right): Q = ${rd(b1)} + ${a}(${R} − ${rd(b1)}) = <b>${rd(b2)}</b>.`],
+          "update A BEFORE B within an episode, using B's OLD value. The reward reaches A one episode later.") };
+  }},
   { id: "return", topic: "l6", name: "Discounted return", make(r) {
       const rs = [ri(r, -2, 2), ri(r, -2, 2), ri(r, -2, 5), ri(r, 0, 10)]; const g = pick(r, [0.5, 0.9, 0.8]);
       const G = rs.reduce((s, x, i) => s + x * g ** i, 0);

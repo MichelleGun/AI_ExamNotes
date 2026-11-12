@@ -462,6 +462,30 @@ P(s' | s, a) = N(s, a, s') / N(s, a)<br>Steps: count transitions → estimate P 
 <div class="example">Q(s,a) = 2, R = 1, γ = 0.9, max<sub>a'</sub> Q(s', a') = 3, α = 0.5. Target = 1 + 2.7 = 3.7. New Q = 2 + 0.5(1.7) = <b>2.85</b>.</div>
 <p><b class="kw">Exploration function</b> f(u, n) = R<sup>+</sup> if n &lt; N<sub>e</sub>, else u. Tries each action at least N<sub>e</sub> times (curiosity), then becomes greedy. <b>DQN</b> = Q-learning with a deep neural network.</p>
 <div class="analogy"><b>Analogy:</b> Q-learning is a tourist rating dishes at each restaurant: after each meal, nudge the rating toward "how good the meal was + how good the best next meal could be".</div>
+`},
+    { h: "8. Q(s,a) question types (worked)", html: `
+<p>Every Q(s,a) question is one of these six. Find which one, then fill in the formula.</p>
+<table class="tbl">
+<tr><td><b>1. From the model</b> (stochastic)</td><td>Q(s,a) = &Sigma; P(s'|s,a) [ R + &gamma; V(s') ]</td></tr>
+<tr><td><b>2. Deterministic</b> (one s')</td><td>Q(s,a) = r + &gamma; max<sub>a'</sub> Q(s',a')</td></tr>
+<tr><td><b>3. From a Q-table</b></td><td>V(s) = max<sub>a</sub> Q(s,a), &pi;(s) = argmax<sub>a</sub> Q(s,a)</td></tr>
+<tr><td><b>4. Q-learning update</b></td><td>Q &larr; Q + &alpha; [ r + &gamma; max<sub>a'</sub> Q(s',a') &minus; Q ]</td></tr>
+<tr><td><b>5. SARSA update</b></td><td>Q &larr; Q + &alpha; [ r + &gamma; Q(s',a'<sub>taken</sub>) &minus; Q ]</td></tr>
+<tr><td><b>6. &epsilon;-greedy</b></td><td>P(greedy) = 1 &minus; &epsilon; + &epsilon;/|A|, P(other) = &epsilon;/|A|</td></tr>
+</table>
+<div class="example"><b>1.</b> 0.7 &rarr; s1 (R = +2, V = 10), 0.3 &rarr; s2 (R = &minus;1, V = 4), &gamma; = 0.9.<br>Q = 0.7(2 + 9) + 0.3(&minus;1 + 3.6) = 7.7 + 0.78 = <b>8.48</b>.</div>
+<div class="example"><b>2.</b> r = &minus;1, Q(s',&middot;) = 2, 5, 3, &gamma; = 0.9. Q = &minus;1 + 0.9 &times; 5 = <b>3.5</b> (use the max, 5).</div>
+<div class="example"><b>3.</b> Q(s,&middot;) = Up 0.4, Down 0.7, Left &minus;0.2. V(s) = <b>0.7</b>, &pi;(s) = <b>Down</b>.</div>
+<div class="example"><b>4 vs 5.</b> Q = 0.5, r = 1, &gamma; = 0.9, &alpha; = 0.1. Took a' with Q = 0.2, best in s' is 0.8.<br>SARSA: 0.5 + 0.1(1 + 0.18 &minus; 0.5) = <b>0.568</b>. Q-learning: 0.5 + 0.1(1 + 0.72 &minus; 0.5) = <b>0.622</b>.</div>
+<div class="example"><b>6.</b> &epsilon; = 0.2, 4 actions: greedy 0.8 + 0.05 = <b>0.85</b>, each other <b>0.05</b>.</div>
+<p><b>Traps:</b></p>
+<ul>
+<li>Terminal next state &rarr; max Q(s',a') = 0. Target is just r.</li>
+<li>&alpha; multiplies only the error, not the whole target.</li>
+<li>Over several episodes, update in the order visited. A reward reaches the state before it one episode later.</li>
+<li>max = the value V(s). argmax = the action &pi;(s).</li>
+<li>Q-learning is off-policy and model-free. SARSA is on-policy and model-free.</li>
+</ul>
 `}
   ]
 });
